@@ -22,9 +22,11 @@ setup(
     install_requires=[
         'django>=1.9',
         'django-chamber>=0.3.7',
+        'django-reversion'
     ],
     dependency_links=[
-        'https://github.com/druids/django-chamber/tarball/0.3.7#egg=django-chamber-0.3.7'
+        'https://github.com/druids/django-chamber/tarball/0.3.7#egg=django-chamber-0.3.7',
+        'https://github.com/druids/django-reversion/tarball/FixedCommandDecorator#egg=django-reversion-2.0.12'
     ],
     zip_safe=False
 )

@@ -1,3 +1,4 @@
+import reversion
 from chamber.models import SmartModel
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -6,6 +7,7 @@ from django.db import models
 from anonymization.purposes.default import purposes_map
 
 
+@reversion.register
 class LegalReason(SmartModel):
     created_at = models.DateTimeField(verbose_name='created at', null=False, blank=False, auto_now_add=True,
                                       db_index=True)
