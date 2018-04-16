@@ -1,32 +1,29 @@
+from security.version import get_version
+
 from setuptools import setup, find_packages
 
 setup(
-    name='django-anonymization',
-    version='0.1',
-    description='Library for anonymizing model fields',
-    author='lymet',
-    author_email='lymet@example.org',
-    url='https://django-anonymization.example.org',
-    license='LGPL',
-    package_dir={'anonymization': 'anonymization'},
+    name='django-GDPR',
+    version=get_version(),
+    description='Library for GDPR implementation',
+    author='Druids',
+    author_email='matllubos@gmail.com',
+    url='https://github.com/matllubos/django-GDPR',
+    license='MIT',
+    package_dir={'gdpr': 'gdpr'},
     include_package_data=True,
     packages=find_packages(),
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Framework :: Django',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
+        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
     ],
     install_requires=[
-        'django>=1.9',
-        'django-chamber>=0.3.7',
-        'django-reversion'
-    ],
-    dependency_links=[
-        'https://github.com/druids/django-chamber/tarball/0.3.7#egg=django-chamber-0.3.7',
-        'https://github.com/druids/django-reversion/tarball/FixedCommandDecorator#egg=django-reversion-2.0.12'
+        'django>=1.10',
+        'django-chamber>=0.4.0',
     ],
     zip_safe=False
 )

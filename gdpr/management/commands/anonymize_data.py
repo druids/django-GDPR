@@ -4,8 +4,8 @@ from django.core.management.base import BaseCommand
 
 import pyprind
 
-from anonymization.anonymizers import DeleteModelAnonymizer
-from anonymization.loading import get_anonymizers
+from gdpr.anonymizers import DeleteModelAnonymizer
+from gdpr.loading import get_anonymizers
 
 from utils import chunked_iterator, chunked_queryset_iterator
 from utils.commands import ProgressBarStream

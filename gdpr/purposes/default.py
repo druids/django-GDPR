@@ -1,7 +1,9 @@
+from datetime import timedelta
+
 from collections import OrderedDict
+
 from django.core.exceptions import ImproperlyConfigured
-from datetime import timedelta, datetime
-import six
+
 
 purposes_map = OrderedDict()
 
@@ -18,7 +20,8 @@ class PurposeMetaclass(type):
         return new_class
 
 
-class AbstractPurpose(six.with_metaclass(PurposeMetaclass, object)):
+class AbstractPurpose(metaclass=PurposeMetaclass):
+
     name = None
     slug = None
     fields = {}
