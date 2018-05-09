@@ -1,4 +1,4 @@
-from security.version import get_version
+from gdpr.version import get_version
 
 from setuptools import setup, find_packages
 
