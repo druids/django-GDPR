@@ -25,4 +25,4 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
     name = None
     slug = None
     fields = {}
-    expires_in = timedelta()
+    expiration_timedelta = timedelta()
