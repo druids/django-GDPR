@@ -13,7 +13,7 @@ class LegalReasonManager(models.Manager):
 
     def create_from_purpose_slug(self, purpose_slug, source_object, issued_at=None, tag=None, related_objects=None):
         try:
-            purpose = purposes_map[self.purpose_slug]
+            purpose = purposes_map[purpose_slug]
             issued_at = issued_at or timezone.now()
 
             legal_reason = LegalReason.objects.create(
@@ -31,6 +31,8 @@ class LegalReasonManager(models.Manager):
 
 
 class LegalReason(SmartModel):
+
+    objects = LegalReasonManager()
 
     issued_at = models.DateTimeField(
         verbose_name=_('issued at'),
