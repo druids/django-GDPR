@@ -29,6 +29,15 @@ class LegalReasonManager(models.Manager):
         except KeyError:
             raise KeyError('Purpose with slug {} does not exits'.format(purpose_slug))
 
+    def exists_valid_consent(self, purpose_slug, source_object):
+        return LegalReason.objects.filter(
+            source_object_content_type=ContentType.objects.get_for_model(source_object.__class__),
+            source_object_id=str(source_object.pk),
+            purpose_slug=purpose_slug,
+            is_active=True,
+            expires_at__gte=timezone.now(),
+        ).exists()
+
 
 class LegalReason(SmartModel):
 
