@@ -153,6 +153,9 @@ class AnonymizedData(SmartModel):
         null=False,
         blank=False
     )
+    object = GenericForeignKey(
+        'content_type', 'object_id'
+    )
     is_active = models.BooleanField(
         verbose_name=_('is active'),
         default=True
@@ -165,8 +168,7 @@ class AnonymizedData(SmartModel):
     )
 
     def __str__(self):
-        return '{field} #{object_id} {content_type}'.format(field=self.field, object_id=self.object_id,
-                                                            content_type=self.content_type)
+        return '{field} {object}'.format(field=self.field, object=self.object)
 
     class Meta:
         verbose_name = _('anonymized data')
