@@ -92,6 +92,9 @@ class LegalReason(SmartModel):
     def purpose(self):
         return purposes_map.get(self.purpose_slug, None)
 
+    def __str__(self):
+        return '{purpose_slug} {object}'.format(purpose_slug=self.purpose_slug, object=self.source_object)
+
     class Meta:
         verbose_name = _('legal reason')
         verbose_name_plural = _('legal reasons')
@@ -121,6 +124,9 @@ class LegalReasonRelatedObject(SmartModel):
     object = GenericForeignKey(
         'object_content_type', 'object_id'
     )
+
+    def __str__(self):
+        return '{legal_reason} {object}'.format(legal_reason=self.legal_reason, object=self.object)
 
     class Meta:
         verbose_name = _('legal reason related object')
@@ -157,6 +163,10 @@ class AnonymizedData(SmartModel):
         null=True,
         blank=True
     )
+
+    def __str__(self):
+        return '{field} #{object_id} {content_type}'.format(field=self.field, object_id=self.object_id,
+                                                            content_type=self.content_type)
 
     class Meta:
         verbose_name = _('anonymized data')
