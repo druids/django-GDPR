@@ -26,3 +26,6 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
     slug = None
     fields = {}
     expiration_timedelta = timedelta()
+
+    def __str__(self):
+        return self.name
