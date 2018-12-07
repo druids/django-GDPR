@@ -19,6 +19,9 @@ class PurposeMetaclass(type):
             purposes_map[new_class.slug] = new_class
         return new_class
 
+    def __str__(self):
+        return str(self.name)
+
 
 class AbstractPurpose(metaclass=PurposeMetaclass):
 
