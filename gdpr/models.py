@@ -93,7 +93,7 @@ class LegalReason(SmartModel):
         return purposes_map.get(self.purpose_slug, None)
 
     def __str__(self):
-        return '{purpose_slug}'.format(purpose_slug=self.purpose_slug)
+        return '{purpose_slug}'.format(purpose_slug=self.get_purpose_slug_display())
 
     class Meta:
         verbose_name = _('legal reason')
