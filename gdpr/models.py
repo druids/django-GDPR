@@ -30,18 +30,32 @@ class LegalReasonManager(models.Manager):
             raise KeyError('Purpose with slug {} does not exits'.format(purpose_slug))
 
     def exists_valid_consent(self, purpose_slug, source_object):
-        return LegalReason.objects.filter(
-            source_object_content_type=ContentType.objects.get_for_model(source_object.__class__),
-            source_object_id=str(source_object.pk),
-            purpose_slug=purpose_slug,
-            is_active=True,
-            expires_at__gte=timezone.now(),
-        ).exists()
+        return LegalReason.objects.filter_source_instance_active_non_expired(
+            source_object).filter(purpose_slug=purpose_slug).exists()
+
+
+class LegalReasonQuerySet(models.QuerySet):
+
+    def filter_active(self):
+        return self.filter(is_active=True)
+
+    def filter_non_expired(self):
+        return self.filter(expires_at__gte=timezone.now())
+
+    def filter_active_and_non_expired(self):
+        return self.filter_active().filter_non_expired()
+
+    def filter_source_instance(self, source_object):
+        return self.filter(source_object_content_type=ContentType.objects.get_for_model(source_object.__class__),
+                           source_object_id=str(source_object.pk))
+
+    def filter_source_instance_active_non_expired(self, source_object):
+        return self.filter_source_instance(source_object).filter_active().filter_non_expired()
 
 
 class LegalReason(SmartModel):
 
-    objects = LegalReasonManager()
+    objects = LegalReasonManager.from_queryset(LegalReasonQuerySet)()
 
     issued_at = models.DateTimeField(
         verbose_name=_('issued at'),
