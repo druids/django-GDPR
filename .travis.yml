@@ -2,7 +2,6 @@ language: python
 sudo: required
 dist: xenial
 python:
-  - "3.5"
   - "3.6"
   - "3.7"
 env:
@@ -12,8 +11,11 @@ env:
   - DJANGO_VERSION=2.1.5
 # command to install dependencies
 install:
-  - pip install -r test_requirements.txt
+  - pip install -q -r test_requirements.txt
   - pip install -q Django==$DJANGO_VERSION
   - python setup.py -q install
 # command to run tests
-script: python runtests.py
+script:
+    - python runtests.py
+    - flake8 .
+    - mypy .

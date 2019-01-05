@@ -1,11 +1,9 @@
-from datetime import timedelta
-
 from collections import OrderedDict
+from datetime import timedelta
 
 from django.core.exceptions import ImproperlyConfigured
 
-
-purposes_map = OrderedDict()
+purposes_map: "OrderedDict[str, AbstractPurpose]" = OrderedDict()
 
 
 class PurposeMetaclass(type):
@@ -27,5 +25,5 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
 
     name = None
     slug = None
-    fields = {}
+    fields = {}  # type: ignore
     expiration_timedelta = timedelta()

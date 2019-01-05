@@ -1,15 +1,12 @@
-import os
-
-from os.path import basename
-
-import re
-
 import hashlib
-
-from django.conf import settings
-from django.core.files.base import ContentFile
+import os
+import re
+from os.path import basename
+from typing import Any, List
 
 from chamber.utils import remove_accent
+from django.conf import settings
+from django.core.files.base import ContentFile
 
 
 class FieldAnonymizer:
@@ -18,7 +15,7 @@ class FieldAnonymizer:
     """
 
     ignore_empty_values = True
-    empty_values = [None]
+    empty_values: List[Any] = [None]
 
     def __init__(self, ignore_empty_values=None, empty_values=None):
         """
@@ -192,6 +189,7 @@ class ModelAnonymizerBase(type):
     Metaclass for anonymizers. The main purpose of the metaclass is to register anonymizers and find field anonymizers
     defined in the class as attributes and store it to the fields property.
     """
+
     def __new__(cls, name, bases, attrs):
         from .loading import register
 
