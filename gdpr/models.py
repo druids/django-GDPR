@@ -132,7 +132,8 @@ class LegalReason(SmartModel):
         ContentType,
         verbose_name=_('source object content type'),
         null=False,
-        blank=False
+        blank=False,
+        on_delete=models.DO_NOTHING
     )
     source_object_id = models.TextField(
         verbose_name=_('source object ID'),
@@ -158,19 +159,20 @@ class LegalReason(SmartModel):
 
 
 class LegalReasonRelatedObject(SmartModel):
-
     legal_reason = models.ForeignKey(
         LegalReason,
         verbose_name=_('legal reason'),
         null=False,
         blank=False,
-        related_name='related_objects'
+        related_name='related_objects',
+        on_delete=models.CASCADE
     )
     object_content_type = models.ForeignKey(
         ContentType,
         verbose_name=_('related object content type'),
         null=False,
-        blank=False
+        blank=False,
+        on_delete=models.DO_NOTHING
     )
     object_id = models.TextField(
         verbose_name=_('related object ID'),
@@ -193,7 +195,6 @@ class LegalReasonRelatedObject(SmartModel):
 
 
 class AnonymizedData(SmartModel):
-
     field = models.CharField(
         verbose_name=_('anonymized field name'),
         max_length=250,
@@ -204,7 +205,8 @@ class AnonymizedData(SmartModel):
         ContentType,
         verbose_name=_('related object content type'),
         null=False,
-        blank=False
+        blank=False,
+        on_delete=models.DO_NOTHING
     )
     object_id = models.TextField(
         verbose_name=_('related object ID'),
@@ -222,7 +224,8 @@ class AnonymizedData(SmartModel):
         LegalReason,
         verbose_name=_('expired reason'),
         null=True,
-        blank=True
+        blank=True,
+        on_delete=models.CASCADE
     )
 
     def __str__(self):
