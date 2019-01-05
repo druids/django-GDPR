@@ -1,14 +1,12 @@
-import six
-
 from collections import OrderedDict
-
 from importlib import import_module
 
+import six
 from django.apps import apps
 from django.conf import settings
 from django.utils.encoding import force_text
 
-from is_core.utils import str_to_class
+from .utils import str_to_class
 
 
 class AppAnonymizerLoader:
