@@ -5,6 +5,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "gdpr",
     "tests",
+    "django_extensions",
 ]
 
 DATABASES = {
