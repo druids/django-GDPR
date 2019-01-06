@@ -11,8 +11,14 @@ INSTALLED_APPS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'db',
+        'NAME': 'db.sqlite3',
     }
 }
 
 USE_TZ = True
+
+# Old HC settings
+# @TODO: Replace
+ANONYMIZATION_NAME_KEY = "SOMEFAKEKEY"
+ANONYMIZATION_PERSONAL_ID_KEY = 256
+ANONYMIZATION_PHONE_KEY = 21212
