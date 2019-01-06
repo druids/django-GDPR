@@ -1,7 +1,10 @@
 from django.test import TestCase
 
 from tests.models import Account, Address, ContactForm, Customer, Email, Payment
-from .data import *
+from .data import (
+    ACCOUNT__NUMBER, ACCOUNT__OWNER, ADDRESS__CITY, ADDRESS__HOUSE_NUMBER, ADDRESS__POST_CODE, ADDRESS__STREET,
+    CUSTOMER__BIRTH_DATE, CUSTOMER__EMAIL, CUSTOMER__FB_ID, CUSTOMER__FIRST_NAME, CUSTOMER__IP, CUSTOMER__KWARGS,
+    CUSTOMER__LAST_NAME, CUSTOMER__PERSONAL_ID, CUSTOMER__PHONE_NUMBER, PAYMENT__VALUE)
 from .utils import NotImplementedMixin
 
 

@@ -1,7 +1,9 @@
 from typing import Callable
 
+from django.test import TestCase
 
-class NotImplementedMixin:
+
+class NotImplementedMixin(TestCase):
     def assertNotImplemented(self, func: Callable, *args, **kwargs) -> None:
         try:
             func(*args, **kwargs)
