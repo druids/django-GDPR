@@ -1,14 +1,16 @@
 from collections import OrderedDict
 from importlib import import_module
-from typing import Iterator
+from typing import Iterator, TYPE_CHECKING
 
 from django.apps import apps
 from django.conf import settings
 from django.db.models import Model
 from django.utils.encoding import force_text
 
-from gdpr.anonymizers import ModelAnonymizer
 from .utils import str_to_class
+
+if TYPE_CHECKING:
+    from gdpr.anonymizers import ModelAnonymizer
 
 
 class AppAnonymizerLoader:
@@ -19,6 +21,8 @@ class AppAnonymizerLoader:
 
     def import_anonymizers(self) -> None:
         for app in apps.get_app_configs():
+            if app.name == "gdpr":
+                continue
             try:
                 import_module('{}.anonymizers'.format(app.name))
             except ImportError as ex:
@@ -34,7 +38,7 @@ class AnonymizersRegister:
     def __init__(self):
         self.anonymizers: "OrderedDict[Model, ModelAnonymizer]" = OrderedDict()
 
-    def register_anonymizer(self, model: Model, anonymizer: ModelAnonymizer) -> None:
+    def register_anonymizer(self, model: Model, anonymizer: "ModelAnonymizer") -> None:
         self.anonymizers[model] = anonymizer
 
     def _init_anonymizers(self) -> None:
@@ -45,7 +49,7 @@ class AnonymizersRegister:
             else:
                 str_to_class(loader_path)().import_anonymizers()
 
-    def get_anonymizers(self) -> Iterator[ModelAnonymizer]:
+    def get_anonymizers(self) -> Iterator["ModelAnonymizer"]:
         self._init_anonymizers()
 
         for anonymizer in self.anonymizers.values():
