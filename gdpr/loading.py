@@ -35,6 +35,8 @@ class AnonymizersRegister:
     Register is storage for found anonymizer classes.
     """
 
+    _has_init_happen = False
+
     def __init__(self):
         self.anonymizers: "OrderedDict[Model, ModelAnonymizer]" = OrderedDict()
 
@@ -42,6 +44,9 @@ class AnonymizersRegister:
         self.anonymizers[model] = anonymizer
 
     def _init_anonymizers(self) -> None:
+        if self._has_init_happen:
+            return
+        self._has_init_happen = True
         for loader_path in getattr(settings, "ANONYMIZATION_LOADERS", ["gdpr.loading.AppAnonymizerLoader"]):
             if isinstance(loader_path, (list, tuple)):
                 for path in loader_path:
@@ -54,6 +59,16 @@ class AnonymizersRegister:
 
         for anonymizer in self.anonymizers.values():
             yield anonymizer
+
+    def __contains__(self, model: Model) -> bool:
+        self._init_anonymizers()
+
+        return model in self.anonymizers.keys()
+
+    def __getitem__(self, model: Model) -> "ModelAnonymizer":
+        self._init_anonymizers()
+
+        return self.anonymizers[model]
 
 
 register = AnonymizersRegister()
