@@ -1,6 +1,7 @@
 import hashlib
 import os
 import re
+import warnings
 from os.path import basename
 from typing import Any, List, Optional
 
@@ -97,16 +98,18 @@ class NameFieldAnonymizer(FieldAnonymizer):
 
     empty_values = [None, '']
 
+    @staticmethod
     def _char_to_number(char_value):
         return ord(char_value) - 64
 
+    @staticmethod
     def _number_to_char(int_value):
         return chr((int_value % 27) + 64)
 
     def get_anonymized_value(self, value):
         normalized_value = re.sub(r'[^A-Z ]', 'Q', remove_accent(value.strip()).upper())
         normalized_key = (
-            settings.ANONYMIZATION_NAME_KEY[i % len(settings.ANONYMIZATION_NAME_KEY)]
+            [self._char_to_number(i) for i in settings.ANONYMIZATION_NAME_KEY][i % len(settings.ANONYMIZATION_NAME_KEY)]
             for i in range(len(normalized_value))
         )
 
@@ -124,7 +127,7 @@ class PhoneFieldAnonymizer(FieldAnonymizer):
     ignore_empty_values = False
 
     def get_anonymized_value(self, value):
-        return value[0:4] + '{0:09}'.format((int(value[4:]) + settings.ANONYMIZATION_PHONE_KEY) % 1000000000)
+        return value[:4] + '{0:09}'.format((int(value[4:]) + settings.ANONYMIZATION_PHONE_KEY) % 1000000000)
 
 
 class PersonalIIDFieldAnonymizer(FieldAnonymizer):
@@ -196,7 +199,7 @@ class DateFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        raise UserWarning("DateFieldAnonymizer is not yet implemented.")
+        warnings.warn("DateFieldAnonymizer is not yet implemented.", UserWarning)
         return value
 
 
@@ -208,7 +211,7 @@ class CharFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        raise UserWarning("CharFieldAnonymizer is not yet implemented.")
+        warnings.warn("CharFieldAnonymizer is not yet implemented.", UserWarning)
         return value
 
 
@@ -220,7 +223,7 @@ class DecimalFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        raise UserWarning("DecimalFieldAnonymizer is not yet implemented.")
+        warnings.warn("DecimalFieldAnonymizer is not yet implemented.", UserWarning)
         return value
 
 
@@ -232,7 +235,7 @@ class IPAddressFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        raise UserWarning("IPAddressFieldAnonymizer is not yet implemented.")
+        warnings.warn("IPAddressFieldAnonymizer is not yet implemented.", UserWarning)
         return value
 
 
@@ -244,7 +247,7 @@ class AccountNumberFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        raise UserWarning("IPAddressFieldAnonymizer is not yet implemented.")
+        warnings.warn("IPAddressFieldAnonymizer is not yet implemented.", UserWarning)
         return value
 
 
