@@ -2,10 +2,11 @@ import hashlib
 import os
 import re
 from os.path import basename
-from typing import Any, List
+from typing import Any, List, Optional
 
 from chamber.utils import remove_accent
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 
 
@@ -14,10 +15,10 @@ class FieldAnonymizer:
     Field anonymizer's purpose is to anonymize model field accoding to defined rule.
     """
 
-    ignore_empty_values = True
+    ignore_empty_values: bool = True
     empty_values: List[Any] = [None]
 
-    def __init__(self, ignore_empty_values=None, empty_values=None):
+    def __init__(self, ignore_empty_values: bool = None, empty_values: Optional[List[Any]] = None):
         """
         Args:
             ignore_empty_values: defines if empty value of a model will be ignored or should be anonymized too
@@ -26,14 +27,14 @@ class FieldAnonymizer:
         self._ignore_empty_values = ignore_empty_values if ignore_empty_values is not None else self.ignore_empty_values
         self._empty_values = empty_values if empty_values is not None else self.empty_values
 
-    def get_anonymized_value_from_obj(self, obj, name):
+    def get_anonymized_value_from_obj(self, obj, name: str):
         value = getattr(obj, name)
         if self._ignore_empty_values and value in self._empty_values:
             return value
         else:
             return self.get_anonymized_value(value)
 
-    def get_anonymized_value(self, value):
+    def get_anonymized_value(self, value) -> Any:
         """
         There must be defined implementation of rule for anonymization
 
@@ -153,6 +154,98 @@ class IDCardDataFieldAnonymizer(FieldAnonymizer):
 
     def get_anonymized_value(self, value):
         return str(int(hashlib.md5(value.encode('utf-8')).hexdigest(), 16))[:9]
+
+
+class FunctionAnonymizer(FieldAnonymizer):
+    """
+    Use this field anonymization for defining in situ anonymization method.
+
+    Example:
+    ```
+    secret_code = FunctionFieldAnonymizer(lambda x: x**2)
+    ```
+    """
+    func = None
+
+    def __init__(self, func, ignore_empty_values=None, empty_values=None):
+        if callable(func):
+            self.function = func
+        else:
+            raise ImproperlyConfigured("Supplied function is not callable.")
+
+    def get_anonymized_value(self, value):
+        return self.func(value)
+
+
+class PlaceHolderAnonymizer(FieldAnonymizer):
+    """
+    Use this field for fields that doesn't require anonymization.
+
+    Mostly use as placeholder.
+    """
+
+    def get_anonymized_value(self, value):
+        return value
+
+
+class DateFieldAnonymizer(FieldAnonymizer):
+    """
+    Anonymization for DateField.
+
+    @TODO: Implement
+    """
+
+    def get_anonymized_value(self, value):
+        raise UserWarning("DateFieldAnonymizer is not yet implemented.")
+        return value
+
+
+class CharFieldAnonymizer(FieldAnonymizer):
+    """
+    Anonymization for CharField.
+
+    @TODO: Implement
+    """
+
+    def get_anonymized_value(self, value):
+        raise UserWarning("CharFieldAnonymizer is not yet implemented.")
+        return value
+
+
+class DecimalFieldAnonymizer(FieldAnonymizer):
+    """
+    Anonymization for CharField.
+
+    @TODO: Implement
+    """
+
+    def get_anonymized_value(self, value):
+        raise UserWarning("DecimalFieldAnonymizer is not yet implemented.")
+        return value
+
+
+class IPAddressFieldAnonymizer(FieldAnonymizer):
+    """
+    Anonymization for CharField.
+
+    @TODO: Implement
+    """
+
+    def get_anonymized_value(self, value):
+        raise UserWarning("IPAddressFieldAnonymizer is not yet implemented.")
+        return value
+
+
+class AccountNumberFieldAnonymizer(FieldAnonymizer):
+    """
+    Anonymization for CharField.
+
+    @TODO: Implement
+    """
+
+    def get_anonymized_value(self, value):
+        raise UserWarning("IPAddressFieldAnonymizer is not yet implemented.")
+        return value
 
 
 class DummyFileAnonymizer(FieldAnonymizer):

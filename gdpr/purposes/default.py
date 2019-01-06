@@ -1,7 +1,8 @@
 from collections import OrderedDict
-from datetime import timedelta
+from typing import Any, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models import Model
 
 purposes_map: "OrderedDict[str, AbstractPurpose]" = OrderedDict()
 
@@ -22,8 +23,15 @@ class PurposeMetaclass(type):
 
 
 class AbstractPurpose(metaclass=PurposeMetaclass):
+    """
 
-    name = None
-    slug = None
-    fields = {}  # type: ignore
-    expiration_timedelta = timedelta()
+    :param anonymize_legal_reason_related_object_only: If True anonymize only related objects which have links which
+    have LegalReasonRelatedObject records.
+    """
+
+    name: str
+    slug: str
+    source_model: Model
+    fields: Union[str, Tuple[Any, ...]]
+    expiration_timedelta: Any
+    anonymize_legal_reason_related_objects_only: bool = False
