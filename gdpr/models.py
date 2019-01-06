@@ -6,11 +6,10 @@ from django.utils.translation import ugettext_lazy as _
 
 from chamber.models import SmartModel
 
-from .purposes.default import purposes_map
+from .loading import purpose_register
 
 
 class LegalReasonManager(models.Manager):
-
     def create_consent(self, purpose_slug, source_object, issued_at=None, tag=None, related_objects=None):
         """
         Create (or update, if it exist) a LegalReason with purpose slug for concrete object instance
@@ -25,7 +24,10 @@ class LegalReasonManager(models.Manager):
         Returns:
             Legal Reason: LegalReason object
         """
-        purpose = purposes_map[purpose_slug]
+        try:
+            purpose = purpose_register[purpose_slug]
+        except KeyError:
+            raise KeyError('Purpose with slug {} does not exits'.format(purpose_slug))
         issued_at = issued_at or timezone.now()
 
         legal_reason, created = LegalReason.objects.get_or_create(
@@ -123,7 +125,7 @@ class LegalReason(SmartModel):
         blank=False,
         choices=(
             (purpose_slug, purpose_class.name)
-            for purpose_slug, purpose_class in purposes_map.items()
+            for purpose_slug, purpose_class in purpose_register.items()
         ),
         max_length=100,
         db_index=True
@@ -146,7 +148,7 @@ class LegalReason(SmartModel):
 
     @property
     def purpose(self):
-        return purposes_map.get(self.purpose_slug, None)
+        return purpose_register.get(self.purpose_slug, None)
 
     def __str__(self):
         return '{purpose_slug}'.format(purpose_slug=self.get_purpose_slug_display())

@@ -14,8 +14,8 @@ def str_to_class(class_string: str) -> Any:
 
 class AnonymizationModelMixin(object):
     def anonymize_obj(self):
-        from gdpr.loading import register
-        if self.__class__ in register:
-            register[self.__class__]().anonymize_obj(self)
+        from gdpr.loading import anonymizer_register
+        if self.__class__ in anonymizer_register:
+            anonymizer_register[self.__class__]().anonymize_obj(self)
         else:
             raise ImproperlyConfigured("%s does not have registred anonymizer." % self.__class__)
