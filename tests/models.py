@@ -11,8 +11,10 @@ Customer
 
 from django.db import models
 
+from gdpr.utils import AnonymizationModelMixin
 
-class Customer(models.Model):
+
+class Customer(models.Model, AnonymizationModelMixin):
     # Keys for pseudoanonymization
     first_name = models.CharField(max_length=256)
     last_name = models.CharField(max_length=256)
@@ -34,13 +36,13 @@ class Customer(models.Model):
         super().save(*args, **kwargs)
 
 
-class Email(models.Model):
+class Email(models.Model, AnonymizationModelMixin):
     """Example on anonymization on related field."""
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="emails")
     email = models.EmailField(blank=True, null=True)
 
 
-class Address(models.Model):
+class Address(models.Model, AnonymizationModelMixin):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="addresses")
     street = models.CharField(max_length=256, blank=True, null=True)
     house_number = models.CharField(max_length=20, blank=True, null=True)
@@ -48,19 +50,19 @@ class Address(models.Model):
     post_code = models.CharField(max_length=6, blank=True, null=True)
 
 
-class Account(models.Model):
+class Account(models.Model, AnonymizationModelMixin):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="accounts")
     number = models.CharField(max_length=256, blank=True, null=True)
     owner = models.CharField(max_length=256, blank=True, null=True)
 
 
-class Payment(models.Model):
+class Payment(models.Model, AnonymizationModelMixin):
     """Down the rabbit hole multilevel relations."""
     account_number = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="payments")
     value = models.DecimalField(blank=True, null=True, decimal_places=2, max_digits=10)
     date = models.DateField(auto_created=True)
 
 
-class ContactForm(models.Model):
+class ContactForm(models.Model, AnonymizationModelMixin):
     email = models.EmailField()
     full_name = models.CharField(max_length=256)
