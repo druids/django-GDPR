@@ -14,7 +14,7 @@ from django.db import models
 from gdpr.utils import AnonymizationModelMixin
 
 
-class Customer(models.Model, AnonymizationModelMixin):
+class Customer(AnonymizationModelMixin, models.Model):
     # Keys for pseudoanonymization
     first_name = models.CharField(max_length=256)
     last_name = models.CharField(max_length=256)
@@ -36,13 +36,13 @@ class Customer(models.Model, AnonymizationModelMixin):
         super().save(*args, **kwargs)
 
 
-class Email(models.Model, AnonymizationModelMixin):
+class Email(AnonymizationModelMixin, models.Model):
     """Example on anonymization on related field."""
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="emails")
     email = models.EmailField(blank=True, null=True)
 
 
-class Address(models.Model, AnonymizationModelMixin):
+class Address(AnonymizationModelMixin, models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="addresses")
     street = models.CharField(max_length=256, blank=True, null=True)
     house_number = models.CharField(max_length=20, blank=True, null=True)
@@ -50,19 +50,19 @@ class Address(models.Model, AnonymizationModelMixin):
     post_code = models.CharField(max_length=6, blank=True, null=True)
 
 
-class Account(models.Model, AnonymizationModelMixin):
+class Account(AnonymizationModelMixin, models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="accounts")
     number = models.CharField(max_length=256, blank=True, null=True)
     owner = models.CharField(max_length=256, blank=True, null=True)
 
 
-class Payment(models.Model, AnonymizationModelMixin):
+class Payment(AnonymizationModelMixin, models.Model):
     """Down the rabbit hole multilevel relations."""
-    account_number = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="payments")
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="payments")
     value = models.DecimalField(blank=True, null=True, decimal_places=2, max_digits=10)
-    date = models.DateField(auto_created=True)
+    date = models.DateField(auto_now_add=True)
 
 
-class ContactForm(models.Model, AnonymizationModelMixin):
+class ContactForm(AnonymizationModelMixin, models.Model):
     email = models.EmailField()
     full_name = models.CharField(max_length=256)
