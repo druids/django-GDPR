@@ -12,7 +12,7 @@ def str_to_class(class_string: str) -> Any:
     return c
 
 
-class AnonymizationModelMixin:
+class AnonymizationModelMixin(object):
     def anonymize_obj(self):
         from gdpr.loading import register
         if self.__class__ in register:
