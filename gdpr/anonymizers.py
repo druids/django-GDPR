@@ -247,7 +247,7 @@ class AccountNumberFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        warnings.warn("IPAddressFieldAnonymizer is not yet implemented.", UserWarning)
+        warnings.warn("AccountNumberFieldAnonymizer is not yet implemented.", UserWarning)
         return value
 
 
