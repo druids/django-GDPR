@@ -38,7 +38,7 @@ class FieldAnonymizer:
         raise NotImplementedError
 
 
-class ModelAnonymizerBase(type):
+class ModelAnonymizerMeta(type):
     """
     Metaclass for anonymizers. The main purpose of the metaclass is to register anonymizers and find field anonymizers
     defined in the class as attributes and store it to the fields property.
@@ -47,11 +47,11 @@ class ModelAnonymizerBase(type):
     def __new__(cls, name, bases, attrs):
         from gdpr.loading import anonymizer_register
 
-        new_obj = super(ModelAnonymizerBase, cls).__new__(cls, name, bases, attrs)
+        new_obj = super(ModelAnonymizerMeta, cls).__new__(cls, name, bases, attrs)
 
         # Also ensure initialization is only performed for subclasses of ModelAnonymizer
         # (excluding Model class itself).
-        parents = [b for b in bases if isinstance(b, ModelAnonymizerBase)]
+        parents = [b for b in bases if isinstance(b, ModelAnonymizerMeta)]
         if not parents or not hasattr(new_obj, 'Meta') or getattr(new_obj.Meta, 'abstract', False):
             return new_obj
 
