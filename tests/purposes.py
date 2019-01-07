@@ -99,7 +99,19 @@ class EverythingPurpose(AbstractPurpose):
     slug = EVERYTHING_SLUG
     source_model = Customer
     expiration_timedelta = relativedelta(years=51)
-    fields = "__ALL_RELATED__"
+    fields = (
+        "__ALL__",
+        ("addresses", "__ALL__"),
+        ("accounts", (
+            "__ALL__",
+            ("payments", (
+                "__ALL__",
+            ))
+        )),
+        ("emails", (
+            "__ALL__",
+        )),
+    )
 
 
 class ContactFormPurpose(AbstractPurpose):
