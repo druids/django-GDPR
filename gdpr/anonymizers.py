@@ -22,8 +22,9 @@ class FieldAnonymizer:
 
     def __init__(self, ignore_empty_values=None, empty_values=None):
         """
-        @param ignore_empty_values: defines if empty value of a model will be ignored or should be anonymized too
-        @param empty_values: define list of values which are considered as empty
+        Args:
+            ignore_empty_values: defines if empty value of a model will be ignored or should be anonymized too
+            empty_values: define list of values which are considered as empty
         """
         self._ignore_empty_values = ignore_empty_values if ignore_empty_values is not None else self.ignore_empty_values
         self._empty_values = empty_values if empty_values is not None else self.empty_values
@@ -38,8 +39,12 @@ class FieldAnonymizer:
     def get_anonymized_value(self, value):
         """
         There must be defined implementation of rule for anonymization
-        @param value: value that is anonymized
-        @return: anonymized value
+
+        Args:
+            value: value that is anonymized
+        
+        Returns:
+            anonymized value
         """
         raise NotImplementedError
 
