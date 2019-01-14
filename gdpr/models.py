@@ -1,12 +1,20 @@
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
-from django.db import models
-from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from typing import TYPE_CHECKING
 
 from chamber.models import SmartModel
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.db import models, transaction
+from django.db.models import Q
+from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
+
 from .loading import purpose_register
+
+if TYPE_CHECKING:
+    from gdpr.purposes.default import AbstractPurpose
+
+    _a: AbstractPurpose
 
 
 class LegalReasonManager(models.Manager):
@@ -81,7 +89,7 @@ class LegalReasonManager(models.Manager):
 class LegalReasonQuerySet(models.QuerySet):
 
     def filter_non_expired(self):
-        return self.filter(expires_at__gte=timezone.now())
+        return self.filter(Q(expires_at__gte=timezone.now()) | Q(expires_at=None))
 
     def filter_active_and_non_expired(self):
         return self.filter(is_active=True).filter_non_expired()
@@ -105,8 +113,8 @@ class LegalReason(SmartModel):
     )
     expires_at = models.DateTimeField(
         verbose_name=_('expires at'),
-        null=False,
-        blank=False,
+        null=True,
+        blank=True,
         db_index=True
     )
     tag = models.CharField(
@@ -123,12 +131,8 @@ class LegalReason(SmartModel):
         verbose_name=_('purpose'),
         null=False,
         blank=False,
-        choices=(
-            (purpose_slug, purpose_class.name)
-            for purpose_slug, purpose_class in purpose_register.items()
-        ),
         max_length=100,
-        db_index=True
+        db_index = True
     )
     source_object_content_type = models.ForeignKey(
         ContentType,
@@ -147,11 +151,33 @@ class LegalReason(SmartModel):
     )
 
     @property
-    def purpose(self):
+    def purpose(self) -> "AbstractPurpose":
         return purpose_register.get(self.purpose_slug, None)
 
+    def anonymize_obj(self, *args, **kwargs):
+        purpose_register[self.purpose_slug]().anonymize_obj(self.source_object, self, *args, **kwargs)
+
+    def expirement(self):
+        """Anonymize obj and set `is_active=False`."""
+        with transaction.atomic():
+            self.anonymize_obj()
+            self.is_active = False
+            self.save()
+
+    def expire(self):
+        """Set `expires_at` to now and call `expirement`."""
+        self.expires_at = timezone.now()
+        self.save()
+        self.expirement()
+
     def __str__(self):
-        return '{purpose_slug}'.format(purpose_slug=self.get_purpose_slug_display())
+        return f'{self.purpose.name}'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # To avoid circular import during models import
+        self._meta.get_field('purpose_slug').choices = list(
+            ((purpose_slug, purpose_class.name) for purpose_slug, purpose_class in purpose_register.items()))
 
     class Meta:
         verbose_name = _('legal reason')
@@ -227,7 +253,7 @@ class AnonymizedData(SmartModel):
         verbose_name=_('expired reason'),
         null=True,
         blank=True,
-        on_delete=models.CASCADE
+        on_delete=models.SET_NULL
     )
 
     def __str__(self):
@@ -237,3 +263,4 @@ class AnonymizedData(SmartModel):
         verbose_name = _('anonymized data')
         verbose_name_plural = _('anonymized data')
         ordering = ('-created_at',)
+        unique_together = ('content_type', 'object_id', 'field')

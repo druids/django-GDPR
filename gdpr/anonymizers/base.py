@@ -9,7 +9,7 @@ class FieldAnonymizer:
     ignore_empty_values: bool = True
     empty_values: List[Any] = [None]
 
-    def __init__(self, ignore_empty_values: bool = None, empty_values: Optional[List[Any]] = None):
+    def __init__(self, ignore_empty_values: bool = None, empty_values: Optional[List[Any]] = None) -> None:
         """
         Args:
             ignore_empty_values: defines if empty value of a model will be ignored or should be anonymized too

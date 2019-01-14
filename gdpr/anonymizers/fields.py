@@ -17,7 +17,7 @@ class FunctionAnonymizer(FieldAnonymizer):
     """
     func = None
 
-    def __init__(self, func: Callable, *args, **kwargs):
+    def __init__(self, func: Callable, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if callable(func):
             self.function = func
@@ -104,7 +104,7 @@ class StaticValueAnonymizer(FieldAnonymizer):
     Static value anonymizer replaces value with defined static value.
     """
 
-    def __init__(self, value: Any, *args, **kwargs):
+    def __init__(self, value: Any, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.value: Any = value
 

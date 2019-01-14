@@ -1,5 +1,6 @@
 """Minimal django settings to run tests."""
 
+DEBUG = True
 SECRET_KEY = 'fake-key'
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
