@@ -15,14 +15,14 @@ class TestLegalReason(AnonymizedDataMixin, TestCase):
         cls.customer.save()
 
     def test_create_legal_reson_from_slug(self):
-        LegalReason.objects.create_from_purpose_slug(FIRST_N_LAST_NAME_SLUG, self.customer).save()
+        LegalReason.objects.create_consent(FIRST_N_LAST_NAME_SLUG, self.customer).save()
 
         self.assertTrue(LegalReason.objects.filter(
             purpose_slug=FIRST_N_LAST_NAME_SLUG, source_object_id=self.customer.pk,
             source_object_content_type=ContentType.objects.get_for_model(Customer)).exists())
 
     def test_expirement_legal_reason(self):
-        legal = LegalReason.objects.create_from_purpose_slug(FIRST_N_LAST_NAME_SLUG, self.customer)
+        legal = LegalReason.objects.create_consent(FIRST_N_LAST_NAME_SLUG, self.customer)
         legal.expire()
 
         anon_customer = Customer.objects.get(pk=self.customer.pk)

@@ -52,8 +52,7 @@ class LegalReasonManager(models.Manager):
 
         if not created:
             legal_reason.change_and_save(expires_at=timezone.now() + purpose.expiration_timedelta, tag=tag,
-                                         is_active=True
-            )
+                                         is_active=True)
 
         for related_object in related_objects or ():
             legal_reason.related_objects.update_or_create(
