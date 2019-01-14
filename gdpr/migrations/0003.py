@@ -10,7 +10,7 @@ from django.db.models import Count
 from django.utils.timezone import utc
 
 
-def remove_duplicate_legal_reasons(purpose_slug, source_object_content_type, source_object_id):
+def remove_duplicate_legal_reasons(apps, purpose_slug, source_object_content_type, source_object_id):
     LegalReason = apps.get_model('gdpr', 'LegalReason')
     duplicate_legal_reason_qs = LegalReason.objects.filter(
         purpose_slug=purpose_slug,
@@ -22,7 +22,7 @@ def remove_duplicate_legal_reasons(purpose_slug, source_object_content_type, sou
         duplicate_legal_reason_qs.filter(is_active=False).delete()
 
     latest_legal_reason = duplicate_legal_reason_qs.latest('expires_at')
-    duplicite_legal_reason_qs.exclude(pk=latest_legal_reason.pk).delete()
+    duplicate_legal_reason_qs.exclude(pk=latest_legal_reason.pk).delete()
 
 
 def check_uniqueness_and_keep_latest_active_legal_reason(apps, schema_editor):
@@ -31,12 +31,12 @@ def check_uniqueness_and_keep_latest_active_legal_reason(apps, schema_editor):
         lr_count=Count('purpose_slug')).filter(lr_count__gt=1).order_by('-lr_count').distinct()
 
     for legal_reason in check_qs.all():
-        remove_duplicate_legal_reasons(legal_reason['purpose_slug'], legal_reason['source_object_content_type'],
+        remove_duplicate_legal_reasons(apps, legal_reason['purpose_slug'], legal_reason['source_object_content_type'],
                                        legal_reason['source_object_id']
         )
 
 
-def remove_duplicate_legal_reasons_relatives(legal_reason, object_content_type, object_id):
+def remove_duplicate_legal_reasons_relatives(apps, legal_reason, object_content_type, object_id):
     LegalReasonRelatedObject = apps.get_model('gdpr', 'LegalReasonRelatedObject')
     duplicates_qs = LegalReasonRelatedObject.objects.filter(
         legal_reason=legal_reason,
@@ -53,7 +53,7 @@ def check_uniqueness_and_keep_latest_active_legal_reason_related_object(apps, sc
         lrro_count=Count('legal_reason')).filter(lrro_count__gt=1).order_by('-lrro_count').distinct()
 
     for legal_reason_related_object in check_qs.all():
-        remove_duplicate_legal_reasons_relatives(legal_reason_related_object['legal_reason'],
+        remove_duplicate_legal_reasons_relatives(apps, legal_reason_related_object['legal_reason'],
                                                  legal_reason_related_object['object_content_type'],
                                                  legal_reason_related_object['object_id']
         )
@@ -68,13 +68,5 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(check_uniqueness_and_keep_latest_active_legal_reason),
-        migrations.AlterUniqueTogether(
-            name='legalreason',
-            unique_together=set([('purpose_slug', 'source_object_content_type', 'source_object_id')]),
-        ),
         migrations.RunPython(check_uniqueness_and_keep_latest_active_legal_reason_related_object),
-        migrations.AlterUniqueTogether(
-            name='legalreasonrelatedobject',
-            unique_together=set([('legal_reason', 'object_content_type', 'object_id')]),
-        ),
     ]
