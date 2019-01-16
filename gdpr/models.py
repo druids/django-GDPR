@@ -1,7 +1,5 @@
-from datetime import datetime
-from typing import Iterable, Optional, TYPE_CHECKING, Type
+from dateutil.relativedelta import relativedelta
 
-from chamber.models import SmartModel
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction
@@ -9,7 +7,12 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
+from chamber.models import SmartModel
+
+from typing import TYPE_CHECKING, Iterable, Optional, Type
+
 from .loading import purpose_register
+
 
 if TYPE_CHECKING:
     from gdpr.purposes.default import AbstractPurpose
@@ -94,6 +97,25 @@ class LegalReasonManager(models.Manager):
 
 
 class LegalReasonQuerySet(models.QuerySet):
+
+    def filter_expired_retaining_data_in_last_days(self, days=None):
+        """
+        Filters all Legal Reason that retain data and that expired in last days
+
+        Args:
+            days: Number of days in the past. If not provided, all Legal Reasons retaining data which expired in the
+            past will be returned.
+        """
+        purpose_slugs_retaining_data = [slug for slug, cls in purpose_register.items() if cls.is_retaining_data]
+
+        filter_keys = {
+            'expires_at__lt': timezone.now(),
+        } if days is None else {
+            'expires_at__gt': timezone.now() - relativedelta(days=days),
+            'expires_at__lt': timezone.now()
+        }
+
+        return self.filter(purpose_slug__in=purpose_slugs_retaining_data, **filter_keys)
 
     def filter_non_expired(self):
         return self.filter(Q(expires_at__gte=timezone.now()) | Q(expires_at=None))
