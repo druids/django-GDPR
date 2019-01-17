@@ -125,7 +125,8 @@ class LegalReason(SmartModel):
             (purpose_slug, purpose_class.name)
             for purpose_slug, purpose_class in purposes_map.items()
         ),
-        max_length=100
+        max_length=100,
+        db_index=True
     )
     source_object_content_type = models.ForeignKey(
         ContentType,
@@ -135,7 +136,8 @@ class LegalReason(SmartModel):
     )
     source_object_id = models.TextField(
         verbose_name=_('source object ID'),
-        null=False, blank=False
+        null=False, blank=False,
+        db_index=True
     )
     source_object = GenericForeignKey(
         'source_object_content_type', 'source_object_id'
@@ -173,7 +175,8 @@ class LegalReasonRelatedObject(SmartModel):
     object_id = models.TextField(
         verbose_name=_('related object ID'),
         null=False,
-        blank=False
+        blank=False,
+        db_index=True
     )
     object = GenericForeignKey(
         'object_content_type', 'object_id'

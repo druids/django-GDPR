@@ -22,12 +22,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='legalreason',
             name='issued_at',
-            field=models.DateTimeField(default=datetime.datetime(2018, 5, 9, 13, 18, 7, 317147, tzinfo=utc), verbose_name='issued at'),
+            field=models.DateTimeField(default=datetime.datetime(2018, 5, 9, 13, 18, 7, 317147, tzinfo=utc),
+                                       verbose_name='issued at'),
             preserve_default=False,
         ),
         migrations.AlterField(
             model_name='legalreason',
             name='purpose_slug',
-            field=models.CharField(choices=[('precheck', 'Scoring'), ('application-created', 'Scoring')], max_length=100, verbose_name='purpose'),
+            field=models.CharField(choices=[], max_length=100, verbose_name='purpose'),
         ),
     ]

@@ -7,7 +7,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -24,7 +23,9 @@ class Migration(migrations.Migration):
                 ('field', models.CharField(max_length=250, verbose_name='anonymized field name')),
                 ('object_id', models.TextField(verbose_name='related object ID')),
                 ('is_active', models.BooleanField(default=True, verbose_name='is active')),
-                ('content_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType', verbose_name='related object content type')),
+                ('content_type',
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType',
+                                   verbose_name='related object content type')),
             ],
             options={
                 'verbose_name': 'anonymized data',
@@ -43,7 +44,9 @@ class Migration(migrations.Migration):
                 ('is_active', models.BooleanField(default=True, verbose_name='is active')),
                 ('purpose_slug', models.CharField(max_length=100, verbose_name='purpose')),
                 ('source_object_id', models.TextField(verbose_name='source object ID')),
-                ('source_object_content_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType', verbose_name='source object content type')),
+                ('source_object_content_type',
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType',
+                                   verbose_name='source object content type')),
             ],
             options={
                 'verbose_name': 'legal reason',
@@ -58,8 +61,12 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='created at')),
                 ('changed_at', models.DateTimeField(auto_now=True, db_index=True, verbose_name='changed at')),
                 ('object_id', models.TextField(verbose_name='related object ID')),
-                ('content_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType', verbose_name='related object content type')),
-                ('legal_reason', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='related_objects', to='gdpr.LegalReason', verbose_name='legal reason')),
+                ('content_type',
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType',
+                                   verbose_name='related object content type')),
+                ('legal_reason',
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='related_objects',
+                                   to='gdpr.LegalReason', verbose_name='legal reason')),
             ],
             options={
                 'verbose_name': 'legal reason related object',
@@ -70,6 +77,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='anonymizeddata',
             name='expired_reason',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='gdpr.LegalReason', verbose_name='expired reason'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
+                                    to='gdpr.LegalReason', verbose_name='expired reason'),
         ),
     ]

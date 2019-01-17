@@ -24,6 +24,7 @@ setup(
     install_requires=[
         'django>=1.10',
         'django-chamber>=0.4.0',
+        'tqdm>=4.28.1',
     ],
     zip_safe=False
 )
