@@ -8,8 +8,6 @@ from gdpr.loading import anonymizer_register
 if TYPE_CHECKING:
     from gdpr.models import LegalReason
 
-    _: LegalReason
-
 
 class PurposeMetaclass(type):
 
@@ -42,5 +40,6 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
     expiration_timedelta: Any
     anonymize_legal_reason_related_objects_only: bool = False  # @TODO: Add support
 
-    def anonymize_obj(self, obj: Model, legal_reason: Optional["LegalReason"] = None):
-        anonymizer_register[self.source_model]().anonymize_obj(obj, legal_reason, self)
+    def anonymize_obj(self, obj: Model, legal_reason: Optional["LegalReason"] = None,
+                      fields: Optional[Union[str, Tuple[Any, ...]]] = None):
+        anonymizer_register[self.source_model]().anonymize_obj(obj, legal_reason, self, fields or self.fields)

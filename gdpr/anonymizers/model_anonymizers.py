@@ -12,8 +12,6 @@ from gdpr.models import AnonymizedData, LegalReason
 if TYPE_CHECKING:
     from gdpr.purposes.default import AbstractPurpose
 
-    _: AbstractPurpose
-
 FieldList = Union[List, Tuple, KeysView[str]]  # List, tuple or return of dict keys() method.
 FieldMatrix = Union[str, Tuple[Any, ...]]
 
@@ -116,12 +114,12 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
         self.perform_anonymization(obj, update_dict, legal_reason)
 
         for key in related_fields.keys():
-            related_attribute = getattr(object, key)
+            related_attribute = getattr(obj, key)
             o_anonymizer = None
             for o in related_attribute.all():
                 if not o_anonymizer:
                     o_anonymizer = anonymizer_register[o.__class__]
-                o_anonymizer.anonymize_obj(o, legal_reason, purpose=purpose, fields=related_fields[key])
+                o_anonymizer().anonymize_obj(o, legal_reason, purpose=purpose, fields=related_fields[key])
 
 
 class ModelAnonymizer(ModelAnonymizerBase):

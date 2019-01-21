@@ -14,12 +14,6 @@ if TYPE_CHECKING:
     from gdpr.purposes.default import AbstractPurpose
     from gdpr.anonymizers import ModelAnonymizer
 
-    _a: ModelAnonymizer
-    _b: AbstractPurpose
-    _c: _OrderedDictItemsView
-    _d: _OrderedDictKeysView
-    _e: _OrderedDictValuesView
-
 
 class BaseLoader:
     """Base class for all loaders."""

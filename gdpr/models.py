@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 from chamber.models import SmartModel
-
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction
@@ -13,8 +12,6 @@ from .loading import purpose_register
 
 if TYPE_CHECKING:
     from gdpr.purposes.default import AbstractPurpose
-
-    _a: AbstractPurpose
 
 
 class LegalReasonManager(models.Manager):
@@ -47,8 +44,8 @@ class LegalReasonManager(models.Manager):
                 'expires_at': issued_at + purpose.expiration_timedelta,
                 'tag': tag,
                 'is_active': True
-                }
-            )
+            }
+        )
 
         if not created:
             legal_reason.change_and_save(expires_at=timezone.now() + purpose.expiration_timedelta, tag=tag,

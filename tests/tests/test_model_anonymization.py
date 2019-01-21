@@ -30,9 +30,9 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         self.assertAnonymizedDataExists(anon_customer, "personal_id")
         self.assertNotEqual(anon_customer.phone_number, CUSTOMER__PHONE_NUMBER)
         self.assertAnonymizedDataExists(anon_customer, "phone_number")
-        self.assertNotImplementedNotEqual(anon_customer.birth_date, CUSTOMER__BIRTH_DATE)
+        self.assertNotEquals(anon_customer.birth_date, CUSTOMER__BIRTH_DATE)
         self.assertAnonymizedDataExists(anon_customer, "first_name")
-        self.assertNotImplementedNotEqual(anon_customer.fb_id, CUSTOMER__FB_ID)
+        self.assertNotEquals(anon_customer.fb_id, CUSTOMER__FB_ID)
         self.assertAnonymizedDataExists(anon_customer, "first_name")
         self.assertNotImplementedNotEqual(str(anon_customer.last_login_ip), CUSTOMER__IP)
         self.assertAnonymizedDataExists(anon_customer, "first_name")
@@ -57,7 +57,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         self.address.anonymize_obj()
         anon_address: Address = Address.objects.get(pk=self.address.pk)
 
-        self.assertNotImplementedNotEqual(anon_address.street, ADDRESS__STREET)
+        self.assertNotEqual(anon_address.street, ADDRESS__STREET)
         self.assertAnonymizedDataExists(anon_address, "street")
         self.assertEqual(anon_address.house_number, ADDRESS__HOUSE_NUMBER)
         self.assertEqual(anon_address.city, ADDRESS__CITY)
@@ -74,7 +74,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         anon_account: Account = Account.objects.get(pk=self.account.pk)
 
-        self.assertNotImplementedNotEqual(anon_account.number, ACCOUNT__NUMBER)
+        self.assertNotEqual(anon_account.number, ACCOUNT__NUMBER)
         self.assertAnonymizedDataExists(anon_account, "number")
         self.assertNotEqual(anon_account.owner, ACCOUNT__OWNER)
         self.assertAnonymizedDataExists(anon_account, "owner")
@@ -95,9 +95,9 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         anon_payment: Payment = Payment.objects.get(pk=self.payment.pk)
 
-        self.assertNotImplementedNotEqual(anon_payment.value, PAYMENT__VALUE)
+        self.assertNotEquals(anon_payment.value, PAYMENT__VALUE)
         self.assertAnonymizedDataExists(anon_payment, "value")
-        self.assertNotImplementedNotEqual(anon_payment.date, self.payment.date)
+        self.assertNotEquals(anon_payment.date, self.payment.date)
         self.assertAnonymizedDataExists(anon_payment, "date")
 
     def test_contact_form(self):
@@ -138,3 +138,39 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         self.assertEqual(anon_customer.last_name, CUSTOMER__LAST_NAME)
         self.assertAnonymizedDataNotExists(anon_customer, "last_name")
+
+    def test_anonymization_field_matrix_related(self):
+        related_email: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL)
+        related_email.save()
+
+        self.customer.anonymize_obj(fields=("first_name", ("emails", ("email",))))
+        anon_customer: Customer = Customer.objects.get(pk=self.customer.pk)
+
+        self.assertNotEqual(anon_customer.first_name, CUSTOMER__FIRST_NAME)
+        self.assertAnonymizedDataExists(anon_customer, "first_name")
+
+        self.assertEqual(anon_customer.last_name, CUSTOMER__LAST_NAME)
+        self.assertAnonymizedDataNotExists(anon_customer, "last_name")
+
+        anon_related_email: Email = Email.objects.get(pk=related_email.pk)
+
+        self.assertNotEqual(anon_related_email.email, CUSTOMER__EMAIL)
+        self.assertAnonymizedDataExists(anon_related_email, "email")
+
+    def test_anonymization_field_matrix_related_all(self):
+        related_email: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL)
+        related_email.save()
+
+        self.customer.anonymize_obj(fields=("first_name", ("emails", "__ALL__")))
+        anon_customer: Customer = Customer.objects.get(pk=self.customer.pk)
+
+        self.assertNotEqual(anon_customer.first_name, CUSTOMER__FIRST_NAME)
+        self.assertAnonymizedDataExists(anon_customer, "first_name")
+
+        self.assertEqual(anon_customer.last_name, CUSTOMER__LAST_NAME)
+        self.assertAnonymizedDataNotExists(anon_customer, "last_name")
+
+        anon_related_email: Email = Email.objects.get(pk=related_email.pk)
+
+        self.assertNotEqual(anon_related_email.email, CUSTOMER__EMAIL)
+        self.assertAnonymizedDataExists(anon_related_email, "email")
