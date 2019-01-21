@@ -1,4 +1,5 @@
 import warnings
+from datetime import timedelta
 from typing import Any, Callable
 
 from django.core.exceptions import ImproperlyConfigured
@@ -48,7 +49,7 @@ class DateFieldAnonymizer(FieldAnonymizer):
 
     def get_anonymized_value(self, value):
         warnings.warn("DateFieldAnonymizer is not yet implemented.", UserWarning)
-        return value
+        return value + timedelta(days=7)
 
 
 class CharFieldAnonymizer(FieldAnonymizer):
@@ -60,7 +61,7 @@ class CharFieldAnonymizer(FieldAnonymizer):
 
     def get_anonymized_value(self, value):
         warnings.warn("CharFieldAnonymizer is not yet implemented.", UserWarning)
-        return value
+        return value + "NotImplemented"
 
 
 class DecimalFieldAnonymizer(FieldAnonymizer):
@@ -72,7 +73,7 @@ class DecimalFieldAnonymizer(FieldAnonymizer):
 
     def get_anonymized_value(self, value):
         warnings.warn("DecimalFieldAnonymizer is not yet implemented.", UserWarning)
-        return value
+        return value + 1
 
 
 class IPAddressFieldAnonymizer(FieldAnonymizer):
@@ -96,7 +97,7 @@ class AccountNumberFieldAnonymizer(FieldAnonymizer):
 
     def get_anonymized_value(self, value):
         warnings.warn("AccountNumberFieldAnonymizer is not yet implemented.", UserWarning)
-        return value
+        return "ANON" + value[4:]
 
 
 class StaticValueAnonymizer(FieldAnonymizer):
