@@ -1,9 +1,9 @@
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Model
+from django.db.models import Model, QuerySet
 from django.db.utils import Error
 
-from gdpr.models import AnonymizedData, LegalReasonRelatedObject
+from gdpr.models import AnonymizedData, LegalReason, LegalReasonRelatedObject
 
 
 class AnonymizationModelMixin:
@@ -18,6 +18,9 @@ class AnonymizationModelMixin:
             anonymizer_register[self.__class__]().anonymize_obj(self, *args, **kwargs)
         else:
             raise ImproperlyConfigured("%s does not have registered anonymizer." % self.__class__)
+
+    def get_legal_reasons(self) -> QuerySet:
+        return LegalReason.objects.filter_source_instance(self)
 
     def delete(self, using=None, keep_parents=False):
         """Cleanup anonymization metadata"""

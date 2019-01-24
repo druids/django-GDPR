@@ -4,3 +4,4 @@ python-dateutil==2.7.5
 django-extensions
 freezegun==0.3.11
 Faker==1.0.1
+mock==2.0.0

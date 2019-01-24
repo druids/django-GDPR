@@ -66,11 +66,11 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
 
     def get_local_fields(self, fields: FieldMatrix) -> FieldList:
         """Get Iterable of local fields from fields matrix."""
+        if fields == "__ALL__":
+            return self.fields.keys()
         for i in fields:
             if type(i) not in [str, list, tuple]:
                 raise ImproperlyConfigured()
-        if fields == "__ALL__":
-            return self.fields.keys()
         local_fields = [i for i in fields if type(i) == str]
         if "__ALL__" in local_fields:
             return self.fields.keys()
