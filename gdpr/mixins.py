@@ -31,7 +31,7 @@ class AnonymizationModelMixin:
         except Error:
             pass  # Better to just have some leftovers then to fail
         try:
-            LegalReasonRelatedObject.objects.filter(object_id=obj_id, content_type=self.content_type).delete()
+            LegalReasonRelatedObject.objects.filter(object_id=obj_id, object_content_type=self.content_type).delete()
         except Error:
             pass  # Better to just have some leftovers then to fail
 
