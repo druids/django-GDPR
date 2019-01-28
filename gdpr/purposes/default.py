@@ -4,7 +4,7 @@ from typing import Any, Dict, Iterable, KeysView, List, Optional, TYPE_CHECKING,
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model, Q
 
-from gdpr.loading import anonymizer_register
+from gdpr.loading import anonymizer_register, purpose_register
 
 if TYPE_CHECKING:
     from gdpr.models import LegalReason
@@ -134,3 +134,6 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
         filtered_fields = self.get_filtered_fields(obj.__class__, fields, allowed_field_matrices)
 
         anonymizer_register[self.source_model]().anonymize_obj(obj, legal_reason, self, filtered_fields)
+
+
+purpose_map = purpose_register  # Backwards compatibility
