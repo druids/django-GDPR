@@ -128,7 +128,7 @@ class LegalReason(SmartModel):
         null=False,
         blank=False,
         max_length=100,
-        db_index = True
+        db_index=True
     )
     source_object_content_type = models.ForeignKey(
         ContentType,
