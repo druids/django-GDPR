@@ -136,4 +136,4 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
         anonymizer_register[self.source_model]().anonymize_obj(obj, legal_reason, self, filtered_fields)
 
 
-purpose_map = purpose_register  # Backwards compatibility
+purposes_map = purpose_register  # Backwards compatibility
