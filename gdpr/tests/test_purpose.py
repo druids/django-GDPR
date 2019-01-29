@@ -41,7 +41,6 @@ ALL_FIELDS = (
 class TestPurposeFieldDetermination(TestCase):
     def setUp(self):
         self.purpose = AbstractPurpose()
-        self.purpose.source_model = Customer
 
     def test_purpose_split_fields_to_tuple_only_local(self):
         self.assertTupleEqual(PurposeSplitFields(("a",)).get_tuple(), ("a",))
@@ -59,13 +58,13 @@ class TestPurposeFieldDetermination(TestCase):
         self.assertTupleEqual(PurposeSplitFields("__ALL__", {"b": ("c",)}).get_tuple(), ("__ALL__", ("b", ("c",))))
 
     def test_split_fields_basic_fields(self):
-        fields = self.purpose.split_fields(BASIC_FIELDS)
+        fields = self.purpose.split_fields(BASIC_FIELDS, Customer)
 
         self.assertListEqual(fields.local, ["primary_email_address"])
         self.assertDictEqual(fields.related, {"emails": ("email",)})
 
     def test_split_fields_multilevel_fields(self):
-        local, related = self.purpose.split_fields(MULTILEVEL_FIELDS)
+        local, related = self.purpose.split_fields(MULTILEVEL_FIELDS, Customer)
 
         self.assertListEqual(local, [])
         self.assertDictEqual(related, {

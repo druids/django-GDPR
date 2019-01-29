@@ -1,6 +1,6 @@
-from collections import OrderedDict, _OrderedDictItemsView, _OrderedDictKeysView, _OrderedDictValuesView, defaultdict
+from collections import OrderedDict, _OrderedDictItemsView, _OrderedDictKeysView, _OrderedDictValuesView
 from importlib import import_module
-from typing import Any, DefaultDict, Generic, Iterator, List, Optional, TYPE_CHECKING, Type, TypeVar, Union
+from typing import Any, Generic, Iterator, Optional, TYPE_CHECKING, Type, TypeVar, Union
 
 from django.apps import apps
 from django.conf import settings
@@ -11,8 +11,8 @@ from django.utils.encoding import force_text
 from .utils import str_to_class
 
 if TYPE_CHECKING:
-    from gdpr.purposes.default import AbstractPurpose
     from gdpr.anonymizers import ModelAnonymizer
+    from gdpr.purposes import AbstractPurpose
 
 
 class BaseLoader:
@@ -156,16 +156,6 @@ class AnonymizersRegister(BaseRegister[Model, Type["ModelAnonymizer"]]):
 class PurposesRegister(BaseRegister[str, "AbstractPurpose"]):
     default_loader = "gdpr.loading.AppPurposesLoader"
     loaders_settings = "PURPOSE_LOADERS"
-
-    register_source_model_dict: DefaultDict[Model, List["AbstractPurpose"]]
-
-    def __init__(self):
-        self.register_source_model_dict = defaultdict(list)
-        super().__init__()
-
-    def register_purpose(self, key: str, object_class: "AbstractPurpose", source_model: Model):
-        self.register(key, object_class)
-        self.register_source_model_dict[source_model].append(object_class)
 
 
 anonymizer_register = AnonymizersRegister()

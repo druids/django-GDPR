@@ -39,7 +39,7 @@ class PurposeMetaclass(type):
             if new_class.slug in purpose_register:
                 raise ImproperlyConfigured('More anonymization purposes with slug {}'.format(new_class.slug))
 
-            purpose_register.register_purpose(new_class.slug, new_class, new_class.source_model)
+            purpose_register.register(new_class.slug, new_class)
         return new_class
 
     def __str__(self):
@@ -55,7 +55,6 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
 
     name: str
     slug: str
-    source_model: Type[Model]
     fields: Union[str, Tuple[Any, ...]]
     expiration_timedelta: Any
     anonymize_legal_reason_related_objects_only: bool = False  # @TODO: Add support
@@ -80,9 +79,8 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
                 raise ImproperlyConfigured()
         return {i[0]: i[1] for i in related_fields}
 
-    def split_fields(self, fields: FieldMatrix,
-                     model: Optional[Type[Model]] = None) -> PurposeSplitFields:
-        return PurposeSplitFields(self.get_local_fields(anonymizer_register[model or self.source_model], fields),
+    def split_fields(self, fields: FieldMatrix, model: Type[Model]) -> PurposeSplitFields:
+        return PurposeSplitFields(self.get_local_fields(anonymizer_register[model], fields),
                                   self.get_related_fields(fields))
 
     def filter_local_fields(self, local: FieldList, others: PurposesSplitFields) -> FieldList:
@@ -104,9 +102,8 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
 
         return tuple(related.items())
 
-    def get_filtered_fields(self, model: Optional[Type[Model]], fields: FieldMatrix,
+    def get_filtered_fields(self, model: Type[Model], fields: FieldMatrix,
                             other_fields: PurposesFieldMatrices) -> FieldMatrix:
-        model = model or self.source_model
         local_fields, related_fields = self.split_fields(fields, model)
         other_fields_split = [self.split_fields(i, model) for i in other_fields]
 
@@ -123,7 +120,7 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
         if legal_reason:
             other_legal_reasons = other_legal_reasons.filter(~Q(pk=legal_reason.pk))
         if other_legal_reasons.count() == 0:
-            anonymizer_register[self.source_model]().anonymize_obj(obj, legal_reason, self, fields)
+            anonymizer_register[obj.__class__]().anonymize_obj(obj, legal_reason, self, fields)
             return
 
         from gdpr.loading import purpose_register
@@ -133,7 +130,7 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
                                   set([i.purpose_slug for i in other_legal_reasons])]
         filtered_fields = self.get_filtered_fields(obj.__class__, fields, allowed_field_matrices)
 
-        anonymizer_register[self.source_model]().anonymize_obj(obj, legal_reason, self, filtered_fields)
+        anonymizer_register[obj.__class__]().anonymize_obj(obj, legal_reason, self, filtered_fields)
 
 
 purposes_map = purpose_register  # Backwards compatibility
