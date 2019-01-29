@@ -1,6 +1,8 @@
 from .fields import (
     AccountNumberFieldAnonymizer, CharFieldAnonymizer, DateFieldAnonymizer, DecimalFieldAnonymizer, FunctionAnonymizer,
     IPAddressFieldAnonymizer, PlaceHolderAnonymizer, StaticValueAnonymizer)
+from .generic_relation import ReverseGenericRelationAnonymizer
+from .gis import GISPointFieldAnonymizer
 from .hc_fields import (
     DummyFileAnonymizer, EmailFieldAnonymizer, IDCardDataFieldAnonymizer, MD5TextFieldAnonymizer, NameFieldAnonymizer,
     PersonalIIDFieldAnonymizer, PhoneFieldAnonymizer, UsernameFieldAnonymizer)
@@ -10,4 +12,5 @@ __all__ = ["ModelAnonymizer", "DeleteModelAnonymizer", "FunctionAnonymizer", "Pl
            "DateFieldAnonymizer", "CharFieldAnonymizer", "DecimalFieldAnonymizer", "IPAddressFieldAnonymizer",
            "AccountNumberFieldAnonymizer", "StaticValueAnonymizer", "MD5TextFieldAnonymizer", "EmailFieldAnonymizer",
            "UsernameFieldAnonymizer", "NameFieldAnonymizer", "PhoneFieldAnonymizer", "PersonalIIDFieldAnonymizer",
-           "IDCardDataFieldAnonymizer", "DummyFileAnonymizer"]
+           "IDCardDataFieldAnonymizer", "DummyFileAnonymizer", "GISPointFieldAnonymizer",
+           "ReverseGenericRelationAnonymizer"]

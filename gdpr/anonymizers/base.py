@@ -1,4 +1,13 @@
-from typing import Any, List, Optional
+from typing import Any, Iterable, List, Optional
+
+
+class RelationAnonymizer:
+    """
+    Base class for Anonymizers defining special relations.
+    """
+
+    def get_related_objects(self) -> Iterable:
+        raise NotImplementedError
 
 
 class FieldAnonymizer:
