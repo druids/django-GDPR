@@ -9,6 +9,8 @@ from django.db import migrations, models
 from django.db.models import Count
 from django.utils.timezone import utc
 
+from tqdm import tqdm
+
 
 def remove_duplicate_legal_reasons(apps, purpose_slug, source_object_content_type, source_object_id):
     LegalReason = apps.get_model('gdpr', 'LegalReason')
@@ -30,7 +32,7 @@ def check_uniqueness_and_keep_latest_active_legal_reason(apps, schema_editor):
     check_qs = LegalReason.objects.values('purpose_slug', 'source_object_content_type', 'source_object_id').annotate(
         lr_count=Count('purpose_slug')).filter(lr_count__gt=1).order_by('-lr_count').distinct()
 
-    for legal_reason in check_qs.all():
+    for legal_reason in tqdm(check_qs.all()):
         remove_duplicate_legal_reasons(apps, legal_reason['purpose_slug'], legal_reason['source_object_content_type'],
                                        legal_reason['source_object_id']
         )
@@ -52,7 +54,7 @@ def check_uniqueness_and_keep_latest_active_legal_reason_related_object(apps, sc
     check_qs = LegalReasonRelatedObject.objects.values('legal_reason', 'object_content_type', 'object_id').annotate(
         lrro_count=Count('legal_reason')).filter(lrro_count__gt=1).order_by('-lrro_count').distinct()
 
-    for legal_reason_related_object in check_qs.all():
+    for legal_reason_related_object in tqdm(check_qs.all()):
         remove_duplicate_legal_reasons_relatives(apps, legal_reason_related_object['legal_reason'],
                                                  legal_reason_related_object['object_content_type'],
                                                  legal_reason_related_object['object_id']
@@ -65,8 +67,23 @@ class Migration(migrations.Migration):
         ('gdpr', '0002_auto_20180509_1518'),
         ('contenttypes', '0002_remove_content_type_name'),
     ]
-
     operations = [
+        migrations.AlterField(
+            model_name='legalreason',
+            name='purpose_slug',
+            field=models.CharField(choices=[], db_index=True,
+                                   max_length=100, verbose_name='purpose'),
+        ),
+        migrations.AlterField(
+            model_name='legalreason',
+            name='source_object_id',
+            field=models.TextField(verbose_name='source object ID', db_index=True),
+        ),
+        migrations.AlterField(
+            model_name='legalreasonrelatedobject',
+            name='object_id',
+            field=models.TextField(verbose_name='related object ID', db_index=True),
+        ),
         migrations.RunPython(check_uniqueness_and_keep_latest_active_legal_reason),
         migrations.RunPython(check_uniqueness_and_keep_latest_active_legal_reason_related_object),
     ]
