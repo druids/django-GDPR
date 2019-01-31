@@ -59,16 +59,18 @@ class LegalReasonManager(models.Manager):
 
         return legal_reason
 
-    def deactivate_consent(self, purpose_slug, source_object):
+    def expire_consent(self, purpose_slug, source_object):
         """
-        Deactivate/Remove consent (Leagal reason) for source_object, purpose_slug combination
+        Deactivate/Remove consent (Legal reason) for source_object, purpose_slug combination
 
         Args:
             purpose_slug: Purpose slug to deactivate consent for
             source_object: Source object to deactivate consent for
         """
-        LegalReason.objects.filter_source_instance_active_non_expired(source_object).filter(
-            purpose_slug=purpose_slug).update(is_active=False)
+        reasons = LegalReason.objects.filter_source_instance_active_non_expired(source_object).filter(
+            purpose_slug=purpose_slug)
+        for i in reasons:
+            i.expire()
 
     def exists_valid_consent(self, purpose_slug, source_object):
         """
@@ -99,7 +101,6 @@ class LegalReasonQuerySet(models.QuerySet):
 
 
 class LegalReason(SmartModel):
-
     objects = LegalReasonManager.from_queryset(LegalReasonQuerySet)()
 
     issued_at = models.DateTimeField(
