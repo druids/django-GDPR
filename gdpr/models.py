@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import Iterable, Optional, TYPE_CHECKING, Type
 
 from chamber.models import SmartModel
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -7,6 +7,7 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from datetime import datetime
 
 from .loading import purpose_register
 
@@ -15,7 +16,8 @@ if TYPE_CHECKING:
 
 
 class LegalReasonManager(models.Manager):
-    def create_consent(self, purpose_slug, source_object, issued_at=None, tag=None, related_objects=None):
+    def create_consent(self, purpose_slug: str, source_object, issued_at: Optional[datetime] = None,
+                       tag: Optional[str] = None, related_objects: Optional[Iterable[Type[models.Model]]] = None):
         """
         Create (or update, if it exist) a LegalReason with purpose slug for concrete object instance
 
@@ -59,7 +61,7 @@ class LegalReasonManager(models.Manager):
 
         return legal_reason
 
-    def expire_consent(self, purpose_slug, source_object):
+    def expire_consent(self, purpose_slug: str, source_object):
         """
         Deactivate/Remove consent (Legal reason) for source_object, purpose_slug combination
 
@@ -67,12 +69,10 @@ class LegalReasonManager(models.Manager):
             purpose_slug: Purpose slug to deactivate consent for
             source_object: Source object to deactivate consent for
         """
-        reasons = LegalReason.objects.filter_source_instance_active_non_expired(source_object).filter(
-            purpose_slug=purpose_slug)
-        for i in reasons:
-            i.expire()
+        for l in LegalReason.objects.filter_source_instance_active_non_expired_purpose(source_object, purpose_slug):
+            l.expire()
 
-    def exists_valid_consent(self, purpose_slug, source_object):
+    def exists_valid_consent(self, purpose_slug: str, source_object):
         """
         Returns True if source_object has valid (ie. active and non-expired) consent (Legal Reason)
 
@@ -80,8 +80,15 @@ class LegalReasonManager(models.Manager):
             purpose_slug: Purpose_slug to check consent for
             source_object: Source object to check consent for
         """
-        return LegalReason.objects.filter_source_instance_active_non_expired(
-            source_object).filter(purpose_slug=purpose_slug).exists()
+        return LegalReason.objects.filter_source_instance_active_non_expired_purpose(
+            source_object, purpose_slug).exists()
+
+    def expire_old_consents(self):
+        """
+        Anonymize and expire consents which have past their `expires_at`.
+        """
+        for l in LegalReason.objects.filter_active_and_expired():
+            l.expire()
 
 
 class LegalReasonQuerySet(models.QuerySet):
@@ -89,8 +96,14 @@ class LegalReasonQuerySet(models.QuerySet):
     def filter_non_expired(self):
         return self.filter(Q(expires_at__gte=timezone.now()) | Q(expires_at=None))
 
+    def filter_expired(self):
+        return self.filter(expires_at__lte=timezone.now())
+
     def filter_active_and_non_expired(self):
         return self.filter(is_active=True).filter_non_expired()
+
+    def filter_active_and_expired(self):
+        return self.filter(is_active=True).filter_expired()
 
     def filter_source_instance(self, source_object):
         return self.filter(source_object_content_type=ContentType.objects.get_for_model(source_object.__class__),
@@ -98,6 +111,10 @@ class LegalReasonQuerySet(models.QuerySet):
 
     def filter_source_instance_active_non_expired(self, source_object):
         return self.filter_source_instance(source_object).filter_active_and_non_expired()
+
+    def filter_source_instance_active_non_expired_purpose(self, source_object, purpose_slug: str):
+        return self.filter_source_instance(source_object).filter_active_and_non_expired().filter(
+            purpose_slug=purpose_slug)
 
 
 class LegalReason(SmartModel):
