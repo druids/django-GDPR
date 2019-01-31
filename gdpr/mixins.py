@@ -7,12 +7,13 @@ from gdpr.models import AnonymizedData, LegalReason, LegalReasonRelatedObject
 
 
 class AnonymizationModelMixin:
+
     @property
     def content_type(self) -> ContentType:
         """Get model ContentType"""
         return ContentType.objects.get_for_model(self.__class__)
 
-    def anonymize_obj(self, *args, **kwargs):
+    def _anonymize_obj(self, *args, **kwargs):
         from gdpr.loading import anonymizer_register
         if self.__class__ in anonymizer_register:
             anonymizer_register[self.__class__]().anonymize_obj(self, *args, **kwargs)

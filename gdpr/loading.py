@@ -24,6 +24,7 @@ class BaseLoader:
 
 class AppLoader(BaseLoader):
     """Scan all installed apps for `module_name` module."""
+
     module_name: str
 
     def import_modules(self) -> None:
@@ -39,6 +40,7 @@ class AppLoader(BaseLoader):
 
 class SettingsListLoader(BaseLoader):
     """Import all modules from list `list_name` in settings."""
+
     list_name: str
 
     def import_modules(self):
@@ -56,11 +58,13 @@ class SettingsListLoader(BaseLoader):
 
 class SettingsListAnonymizerLoader(SettingsListLoader):
     """Load all anonymizers from settings.GDPR_ANONYMIZERS_LIST list."""
+
     list_name = "GDPR_ANONYMIZERS_LIST"
 
 
 class SettingsListPurposesLoader(SettingsListLoader):
     """Load all purposes from settings.GDPR_PURPOSES_LIST list."""
+
     list_name = "GDPR_PURPOSES_LIST"
 
 
@@ -72,6 +76,7 @@ class AppAnonymizerLoader(AppLoader):
 
 class AppPurposesLoader(AppLoader):
     """Scan all installed apps for purposes module which should contain purposes."""
+
     module_name = "purposes"
 
 
@@ -81,6 +86,7 @@ V = TypeVar('V')
 
 class BaseRegister(Generic[K, V]):
     """Base class for all registers."""
+
     _has_import_happen = False
     register_dict: "OrderedDict[K, V]"
     loaders_settings: str
@@ -154,6 +160,10 @@ class AnonymizersRegister(BaseRegister[Model, Type["ModelAnonymizer"]]):
 
 
 class PurposesRegister(BaseRegister[str, "AbstractPurpose"]):
+    """
+    PurposesRegister is storage for found purpose classes.
+    """
+
     default_loader = "gdpr.loading.AppPurposesLoader"
     loaders_settings = "PURPOSE_LOADERS"
 

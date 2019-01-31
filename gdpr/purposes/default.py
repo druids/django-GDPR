@@ -34,7 +34,7 @@ class PurposeMetaclass(type):
     def __new__(mcs, name, bases, attrs):
         from gdpr.loading import purpose_register
 
-        new_class = super(PurposeMetaclass, mcs).__new__(mcs, name, bases, attrs)
+        new_class = super().__new__(mcs, name, bases, attrs)
         if hasattr(new_class, 'slug') and new_class.slug:
             if new_class.slug in purpose_register:
                 raise ImproperlyConfigured('More anonymization purposes with slug {}'.format(new_class.slug))

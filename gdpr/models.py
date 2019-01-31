@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Iterable, Optional, TYPE_CHECKING, Type
 
 from chamber.models import SmartModel
@@ -7,7 +8,6 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from datetime import datetime
 
 from .loading import purpose_register
 
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 
 class LegalReasonManager(models.Manager):
+
     def create_consent(self, purpose_slug: str, source_object, issued_at: Optional[datetime] = None,
                        tag: Optional[str] = None, related_objects: Optional[Iterable[Type[models.Model]]] = None):
         """
@@ -69,8 +70,9 @@ class LegalReasonManager(models.Manager):
             purpose_slug: Purpose slug to deactivate consent for
             source_object: Source object to deactivate consent for
         """
-        for l in LegalReason.objects.filter_source_instance_active_non_expired_purpose(source_object, purpose_slug):
-            l.expire()
+        for reason in LegalReason.objects.filter_source_instance_active_non_expired_purpose(source_object,
+                                                                                            purpose_slug):
+            reason.expire()
 
     def exists_valid_consent(self, purpose_slug: str, source_object):
         """
@@ -87,8 +89,8 @@ class LegalReasonManager(models.Manager):
         """
         Anonymize and expire consents which have past their `expires_at`.
         """
-        for l in LegalReason.objects.filter_active_and_expired():
-            l.expire()
+        for reason in LegalReason.objects.filter_active_and_expired():
+            reason.expire()
 
 
 class LegalReasonQuerySet(models.QuerySet):
@@ -168,13 +170,13 @@ class LegalReason(SmartModel):
     def purpose(self) -> "AbstractPurpose":
         return purpose_register.get(self.purpose_slug, None)
 
-    def anonymize_obj(self, *args, **kwargs):
+    def _anonymize_obj(self, *args, **kwargs):
         purpose_register[self.purpose_slug]().anonymize_obj(self.source_object, self, *args, **kwargs)
 
-    def expirement(self):
+    def _expirement(self):
         """Anonymize obj and set `is_active=False`."""
         with transaction.atomic():
-            self.anonymize_obj()
+            self._anonymize_obj()
             self.is_active = False
             self.save()
 
@@ -182,7 +184,7 @@ class LegalReason(SmartModel):
         """Set `expires_at` to now and call `expirement`."""
         self.expires_at = timezone.now()
         self.save()
-        self.expirement()
+        self._expirement()
 
     def __str__(self):
         return f'{self.purpose.name}'

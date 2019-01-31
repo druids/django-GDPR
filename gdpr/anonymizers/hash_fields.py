@@ -24,7 +24,9 @@ class SHA256TextFieldAnonymizer(BaseHashTextFieldAnonymizer):
 
 class HashTextFieldAnonymizer(BaseHashTextFieldAnonymizer):
 
-    def __init__(self, algorithm: str):
+    def __init__(self, algorithm: str, *args, **kwargs):
         if algorithm not in hashlib.algorithms_guaranteed:
             raise RuntimeError(f"Hash algorithm {algorithm} is not supported by python hashlib.")
         self.algorithm = algorithm
+
+        super().__init__(*args, **kwargs)

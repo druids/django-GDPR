@@ -9,13 +9,14 @@ from gdpr.anonymizers.base import FieldAnonymizer
 
 class FunctionAnonymizer(FieldAnonymizer):
     """
-    Use this field anonymization for defining in situ anonymization method.
+    Use this field anonymization for defining in place lambda anonymization method.
 
     Example:
     ```
     secret_code = FunctionFieldAnonymizer(lambda x: x**2)
     ```
     """
+
     func = None
 
     def __init__(self, func: Callable, *args, **kwargs) -> None:
@@ -27,17 +28,6 @@ class FunctionAnonymizer(FieldAnonymizer):
 
     def get_anonymized_value(self, value):
         return self.func(value)
-
-
-class PlaceHolderAnonymizer(FieldAnonymizer):
-    """
-    Use this field for fields that doesn't require anonymization.
-
-    Mostly use as placeholder.
-    """
-
-    def get_anonymized_value(self, value):
-        return value
 
 
 class DateFieldAnonymizer(FieldAnonymizer):

@@ -1,3 +1,5 @@
 from .default import AbstractPurpose
 
-__all__ = ("AbstractPurpose",)
+__all__ = [
+    "AbstractPurpose"
+]

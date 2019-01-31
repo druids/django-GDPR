@@ -8,6 +8,7 @@ class ReverseGenericRelationAnonymizer(RelationAnonymizer):
 
     @TODO: Implement!
     """
+
     app_name: str
     model_name: str
     content_type_field: str

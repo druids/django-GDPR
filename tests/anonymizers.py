@@ -27,7 +27,6 @@ class EmailAnonymizer(anonymizers.ModelAnonymizer):
 
 class AddressAnonymizer(anonymizers.ModelAnonymizer):
     street = anonymizers.CharFieldAnonymizer()
-    house_number = anonymizers.PlaceHolderAnonymizer()
 
     class Meta:
         model = Address

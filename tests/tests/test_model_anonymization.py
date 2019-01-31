@@ -15,7 +15,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         cls.customer.save()
 
     def test_anonymize_customer(self):
-        self.customer.anonymize_obj()
+        self.customer._anonymize_obj()
         anon_customer: Customer = Customer.objects.get(pk=self.customer.pk)
 
         self.assertNotEqual(anon_customer.first_name, CUSTOMER__FIRST_NAME)
@@ -40,7 +40,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
     def test_email(self):
         self.email: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL)
         self.email.save()
-        self.email.anonymize_obj()
+        self.email._anonymize_obj()
         anon_email: Email = Email.objects.get(pk=self.email.pk)
 
         self.assertNotEqual(anon_email.email, CUSTOMER__EMAIL)
@@ -54,7 +54,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
             post_code=ADDRESS__POST_CODE,
         )
         self.address.save()
-        self.address.anonymize_obj()
+        self.address._anonymize_obj()
         anon_address: Address = Address.objects.get(pk=self.address.pk)
 
         self.assertNotEqual(anon_address.street, ADDRESS__STREET)
@@ -70,7 +70,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
             owner=ACCOUNT__OWNER
         )
         self.account.save()
-        self.account.anonymize_obj()
+        self.account._anonymize_obj()
 
         anon_account: Account = Account.objects.get(pk=self.account.pk)
 
@@ -91,7 +91,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
             value=PAYMENT__VALUE,
         )
         self.payment.save()
-        self.payment.anonymize_obj()
+        self.payment._anonymize_obj()
 
         anon_payment: Payment = Payment.objects.get(pk=self.payment.pk)
 
@@ -106,7 +106,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
             full_name="%s %s" % (CUSTOMER__FIRST_NAME, CUSTOMER__LAST_NAME)
         )
         self.contact_form.save()
-        self.contact_form.anonymize_obj()
+        self.contact_form._anonymize_obj()
 
         anon_contact_form: ContactForm = ContactForm.objects.get(pk=self.contact_form.pk)
 
@@ -117,20 +117,20 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
     def test_anonymization_of_anonymized_data(self):
         """Test that anonymized data are not anonymized again."""
-        self.customer.anonymize_obj()
+        self.customer._anonymize_obj()
         anon_customer: Customer = Customer.objects.get(pk=self.customer.pk)
 
         self.assertNotEqual(anon_customer.first_name, CUSTOMER__FIRST_NAME)
         self.assertAnonymizedDataExists(anon_customer, "first_name")
 
-        anon_customer.anonymize_obj()
+        anon_customer._anonymize_obj()
         anon_customer2: Customer = Customer.objects.get(pk=self.customer.pk)
 
         self.assertEqual(anon_customer2.first_name, anon_customer.first_name)
         self.assertNotEqual(anon_customer2.first_name, CUSTOMER__FIRST_NAME)
 
     def test_anonymization_field_matrix(self):
-        self.customer.anonymize_obj(fields=("first_name",))
+        self.customer._anonymize_obj(fields=("first_name",))
         anon_customer: Customer = Customer.objects.get(pk=self.customer.pk)
 
         self.assertNotEqual(anon_customer.first_name, CUSTOMER__FIRST_NAME)
@@ -143,7 +143,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         related_email: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL)
         related_email.save()
 
-        self.customer.anonymize_obj(fields=("first_name", ("emails", ("email",))))
+        self.customer._anonymize_obj(fields=("first_name", ("emails", ("email",))))
         anon_customer: Customer = Customer.objects.get(pk=self.customer.pk)
 
         self.assertNotEqual(anon_customer.first_name, CUSTOMER__FIRST_NAME)
@@ -161,7 +161,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         related_email: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL)
         related_email.save()
 
-        self.customer.anonymize_obj(fields=("first_name", ("emails", "__ALL__")))
+        self.customer._anonymize_obj(fields=("first_name", ("emails", "__ALL__")))
         anon_customer: Customer = Customer.objects.get(pk=self.customer.pk)
 
         self.assertNotEqual(anon_customer.first_name, CUSTOMER__FIRST_NAME)

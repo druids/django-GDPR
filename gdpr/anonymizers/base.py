@@ -56,7 +56,7 @@ class ModelAnonymizerMeta(type):
     def __new__(cls, name, bases, attrs):
         from gdpr.loading import anonymizer_register
 
-        new_obj = super(ModelAnonymizerMeta, cls).__new__(cls, name, bases, attrs)
+        new_obj = super().__new__(cls, name, bases, attrs)
 
         # Also ensure initialization is only performed for subclasses of ModelAnonymizer
         # (excluding Model class itself).
