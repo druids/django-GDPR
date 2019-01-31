@@ -100,6 +100,18 @@ class AccountNumberFieldAnonymizer(FieldAnonymizer):
         return "ANON" + value[4:]
 
 
+class JSONFieldAnonymizer(FieldAnonymizer):
+    """
+    Anonymization for JSONField.
+
+    @TODO: Implement
+    """
+
+    def get_anonymized_value(self, value):
+        warnings.warn("JSONFieldAnonymizer is not yet implemented.", UserWarning)
+        return value
+
+
 class StaticValueAnonymizer(FieldAnonymizer):
     """
     Static value anonymizer replaces value with defined static value.
