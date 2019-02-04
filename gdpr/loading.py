@@ -29,7 +29,7 @@ class AppLoader(BaseLoader):
 
     def import_modules(self) -> None:
         for app in apps.get_app_configs():
-            if app.name == "gdpr":
+            if app.name == 'gdpr':
                 continue
             try:
                 import_module(f'{app.name}.{self.module_name}')
@@ -45,39 +45,37 @@ class SettingsListLoader(BaseLoader):
 
     def import_modules(self):
         if not hasattr(settings, self.list_name):
-            raise ImproperlyConfigured(f"settings.{self.list_name} not found.")
+            raise ImproperlyConfigured(f'settings.{self.list_name} not found.')
         modules_list = getattr(settings, self.list_name)
-        if type(modules_list) is str:
-            import_module(modules_list)
-        elif type(modules_list) in [list, tuple]:
+        if type(modules_list) in [list, tuple]:
             for i in modules_list:
                 import_module(i)
         else:
-            raise ImproperlyConfigured(f"settings.{self.list_name} have incorrect type {str(type(modules_list))}.")
+            raise ImproperlyConfigured(f'settings.{self.list_name} have incorrect type {str(type(modules_list))}.')
 
 
 class SettingsListAnonymizerLoader(SettingsListLoader):
     """Load all anonymizers from settings.GDPR_ANONYMIZERS_LIST list."""
 
-    list_name = "GDPR_ANONYMIZERS_LIST"
+    list_name = 'GDPR_ANONYMIZERS_LIST'
 
 
 class SettingsListPurposesLoader(SettingsListLoader):
     """Load all purposes from settings.GDPR_PURPOSES_LIST list."""
 
-    list_name = "GDPR_PURPOSES_LIST"
+    list_name = 'GDPR_PURPOSES_LIST'
 
 
 class AppAnonymizerLoader(AppLoader):
     """Scan all installed apps for anonymizers module which should contain anonymizers."""
 
-    module_name = "anonymizers"
+    module_name = 'anonymizers'
 
 
 class AppPurposesLoader(AppLoader):
     """Scan all installed apps for purposes module which should contain purposes."""
 
-    module_name = "purposes"
+    module_name = 'purposes'
 
 
 K = TypeVar('K')
@@ -155,8 +153,8 @@ class AnonymizersRegister(BaseRegister[Model, Type["ModelAnonymizer"]]):
     AnonymizersRegister is storage for found anonymizer classes.
     """
 
-    default_loader = "gdpr.loading.AppAnonymizerLoader"
-    loaders_settings = "ANONYMIZATION_LOADERS"
+    default_loader = 'gdpr.loading.AppAnonymizerLoader'
+    loaders_settings = 'ANONYMIZATION_LOADERS'
 
 
 class PurposesRegister(BaseRegister[str, Type["AbstractPurpose"]]):
@@ -164,8 +162,8 @@ class PurposesRegister(BaseRegister[str, Type["AbstractPurpose"]]):
     PurposesRegister is storage for found purpose classes.
     """
 
-    default_loader = "gdpr.loading.AppPurposesLoader"
-    loaders_settings = "PURPOSE_LOADERS"
+    default_loader = 'gdpr.loading.AppPurposesLoader'
+    loaders_settings = 'PURPOSE_LOADERS'
 
 
 anonymizer_register = AnonymizersRegister()

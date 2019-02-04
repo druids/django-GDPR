@@ -15,18 +15,18 @@ class BaseHashTextFieldAnonymizer(FieldAnonymizer):
 
 
 class MD5TextFieldAnonymizer(BaseHashTextFieldAnonymizer):
-    algorithm = "md5"
+    algorithm = 'md5'
 
 
 class SHA256TextFieldAnonymizer(BaseHashTextFieldAnonymizer):
-    algorithm = "sha256"
+    algorithm = 'sha256'
 
 
 class HashTextFieldAnonymizer(BaseHashTextFieldAnonymizer):
 
     def __init__(self, algorithm: str, *args, **kwargs):
         if algorithm not in hashlib.algorithms_guaranteed:
-            raise RuntimeError(f"Hash algorithm {algorithm} is not supported by python hashlib.")
+            raise RuntimeError(f'Hash algorithm {algorithm} is not supported by python hashlib.')
         self.algorithm = algorithm
 
         super().__init__(*args, **kwargs)

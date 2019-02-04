@@ -18,7 +18,7 @@ class AnonymizationModelMixin:
         if self.__class__ in anonymizer_register:
             anonymizer_register[self.__class__]().anonymize_obj(self, *args, **kwargs)
         else:
-            raise ImproperlyConfigured("%s does not have registered anonymizer." % self.__class__)
+            raise ImproperlyConfigured('%s does not have registered anonymizer.' % self.__class__)
 
     def get_legal_reasons(self) -> QuerySet:
         return LegalReason.objects.filter_source_instance(self)

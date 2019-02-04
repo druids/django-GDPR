@@ -24,7 +24,7 @@ class FunctionAnonymizer(FieldAnonymizer):
         if callable(func):
             self.function = func
         else:
-            raise ImproperlyConfigured("Supplied function is not callable.")
+            raise ImproperlyConfigured('Supplied function is not callable.')
 
     def get_anonymized_value(self, value):
         return self.func(value)
@@ -38,7 +38,7 @@ class DateFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        warnings.warn("DateFieldAnonymizer is not yet implemented.", UserWarning)
+        warnings.warn('DateFieldAnonymizer is not yet implemented.', UserWarning)
         return value + timedelta(days=7)
 
 
@@ -50,8 +50,8 @@ class CharFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        warnings.warn("CharFieldAnonymizer is not yet implemented.", UserWarning)
-        return value + "NotImplemented"
+        warnings.warn('CharFieldAnonymizer is not yet implemented.', UserWarning)
+        return value + 'NotImplemented'
 
 
 class DecimalFieldAnonymizer(FieldAnonymizer):
@@ -62,7 +62,7 @@ class DecimalFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        warnings.warn("DecimalFieldAnonymizer is not yet implemented.", UserWarning)
+        warnings.warn('DecimalFieldAnonymizer is not yet implemented.', UserWarning)
         return value + 1
 
 
@@ -74,7 +74,7 @@ class IPAddressFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        warnings.warn("IPAddressFieldAnonymizer is not yet implemented.", UserWarning)
+        warnings.warn('IPAddressFieldAnonymizer is not yet implemented.', UserWarning)
         return value
 
 
@@ -86,8 +86,8 @@ class AccountNumberFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        warnings.warn("AccountNumberFieldAnonymizer is not yet implemented.", UserWarning)
-        return "ANON" + value[4:]
+        warnings.warn('AccountNumberFieldAnonymizer is not yet implemented.', UserWarning)
+        return 'ANON' + value[4:]
 
 
 class JSONFieldAnonymizer(FieldAnonymizer):
@@ -98,7 +98,7 @@ class JSONFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        warnings.warn("JSONFieldAnonymizer is not yet implemented.", UserWarning)
+        warnings.warn('JSONFieldAnonymizer is not yet implemented.', UserWarning)
         return value
 
 

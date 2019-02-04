@@ -67,13 +67,13 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     def get_related_model(self, field_name: str) -> Type[Model]:
         field = getattr(self.model, field_name, None)
         if field is None:
-            raise RuntimeError(f"Field '{field_name}' is not defined on {str(self.model)}")
+            raise RuntimeError(f'Field \'{field_name}\' is not defined on {str(self.model)}')
         elif self.is_reverse_relation(field):
             return field.rel.related_model
         elif self.is_forward_relation(field):
             return field.field.related_model
         else:
-            raise NotImplementedError(f"Relation {str(field)} not supported yet.")
+            raise NotImplementedError(f'Relation {str(field)} not supported yet.')
 
     def mark_field_as_anonymized(self, obj: Model, name: str, legal_reason: Optional[LegalReason] = None) -> None:
         AnonymizedData(object=obj, field=name, expired_reason=legal_reason).save()
@@ -95,7 +95,7 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
 
     def anonymize_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
                       purpose: Optional["AbstractPurpose"] = None,
-                      fields: Union[Fields, FieldMatrix] = "__ALL__"):
+                      fields: Union[Fields, FieldMatrix] = '__ALL__'):
 
         parsed_fields: Fields = Fields(fields, obj.__class__) if not isinstance(fields, Fields) else fields
 
@@ -134,7 +134,7 @@ class DeleteModelAnonymizer(ModelAnonymizer):
 
     def anonymize_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
                       purpose: Optional["AbstractPurpose"] = None,
-                      fields: Union[Fields, FieldMatrix] = "__ALL__"):
+                      fields: Union[Fields, FieldMatrix] = '__ALL__'):
         obj.__class__.objects.filter(pk=obj.pk).delete()
 
     def anonymize_qs(self, qs):

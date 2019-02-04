@@ -11,7 +11,7 @@ class GISPointFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_anonymized_value(self, value):
-        warnings.warn("GISPointFieldAnonymizer is not yet implemented.", UserWarning)
+        warnings.warn('GISPointFieldAnonymizer is not yet implemented.', UserWarning)
         value.x += 10
         value.y += 10
         return value

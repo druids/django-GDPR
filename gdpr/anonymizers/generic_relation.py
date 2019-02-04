@@ -14,8 +14,8 @@ class ReverseGenericRelationAnonymizer(RelationAnonymizer):
     content_type_field: str
     id_field: str
 
-    def __init__(self, app_name: str, model_name: Optional[str] = None, content_type_field: str = "content_type",
-                 id_field: str = "object_id"):
+    def __init__(self, app_name: str, model_name: Optional[str] = None, content_type_field: str = 'content_type',
+                 id_field: str = 'object_id'):
         """
 
         :param app_name: The name of the app or `<app_name>.<model_name>`
