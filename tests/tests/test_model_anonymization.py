@@ -13,6 +13,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
     def setUpTestData(cls):
         cls.customer: Customer = Customer(**CUSTOMER__KWARGS)
         cls.customer.save()
+        cls.base_encryption_key = 'LoremIpsum'
 
     def test_anonymize_customer(self):
         self.customer._anonymize_obj()
@@ -34,13 +35,13 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         self.assertAnonymizedDataExists(anon_customer, "first_name")
         self.assertNotEquals(anon_customer.fb_id, CUSTOMER__FB_ID)
         self.assertAnonymizedDataExists(anon_customer, "first_name")
-        self.assertNotImplementedNotEqual(str(anon_customer.last_login_ip), CUSTOMER__IP)
+        self.assertNotEqual(str(anon_customer.last_login_ip), CUSTOMER__IP)
         self.assertAnonymizedDataExists(anon_customer, "first_name")
 
     def test_email(self):
         self.email: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL)
         self.email.save()
-        self.email._anonymize_obj()
+        self.email._anonymize_obj(base_encryption_key=self.base_encryption_key)
         anon_email: Email = Email.objects.get(pk=self.email.pk)
 
         self.assertNotEqual(anon_email.email, CUSTOMER__EMAIL)
@@ -54,7 +55,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
             post_code=ADDRESS__POST_CODE,
         )
         self.address.save()
-        self.address._anonymize_obj()
+        self.address._anonymize_obj(base_encryption_key=self.base_encryption_key)
         anon_address: Address = Address.objects.get(pk=self.address.pk)
 
         self.assertNotEqual(anon_address.street, ADDRESS__STREET)
@@ -70,7 +71,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
             owner=ACCOUNT__OWNER
         )
         self.account.save()
-        self.account._anonymize_obj()
+        self.account._anonymize_obj(base_encryption_key=self.base_encryption_key)
 
         anon_account: Account = Account.objects.get(pk=self.account.pk)
 
@@ -91,7 +92,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
             value=PAYMENT__VALUE,
         )
         self.payment.save()
-        self.payment._anonymize_obj()
+        self.payment._anonymize_obj(base_encryption_key=self.base_encryption_key)
 
         anon_payment: Payment = Payment.objects.get(pk=self.payment.pk)
 

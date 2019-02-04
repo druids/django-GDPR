@@ -51,6 +51,9 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
     def anonymize_obj(self, obj: Type[Model], legal_reason: Optional["LegalReason"] = None,
                       fields: Optional[FieldMatrix] = None):
         fields = fields or self.fields
+        if len(fields) == 0:
+            # If there are no fields to anonymize do nothing.
+            return
         from gdpr.models import LegalReason  # noqa
 
         obj_model = obj.__class__

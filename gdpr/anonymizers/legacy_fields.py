@@ -86,7 +86,7 @@ class PhoneFieldAnonymizer(FieldAnonymizer):
     Phone number which is anonymized with HC method. To the phone number without calling code, numeric key is added.
     """
 
-    ignore_empty_values = False
+    ignore_empty_values = True
 
     def get_anonymized_value(self, value):
         return value[:4] + '{0:09}'.format((int(value[4:]) + settings.ANONYMIZATION_PHONE_KEY) % 1000000000)

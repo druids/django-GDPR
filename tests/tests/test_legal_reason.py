@@ -195,7 +195,7 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
         self.assertAnonymizedDataExists(anon_customer, 'phone_number')
         self.assertNotEqual(anon_customer.fb_id, CUSTOMER__FB_ID)
         self.assertAnonymizedDataExists(anon_customer, 'fb_id')
-        self.assertNotImplementedNotEqual(anon_customer.last_login_ip, CUSTOMER__IP)
+        self.assertNotEqual(anon_customer.last_login_ip, CUSTOMER__IP)
         self.assertAnonymizedDataExists(anon_customer, 'last_login_ip')
 
         # Email - not anonymized

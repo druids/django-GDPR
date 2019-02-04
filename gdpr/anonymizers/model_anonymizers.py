@@ -1,6 +1,11 @@
+import hashlib
+import random
+import string
 from typing import (
-    Any, Dict, ItemsView, Iterator, KeysView, List, Optional, TYPE_CHECKING, Tuple, Type, Union, ValuesView)
+    Any, Dict, ItemsView, Iterator, KeysView, List, Optional, TYPE_CHECKING, Type, Tuple, Union,
+    ValuesView)
 
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db.models import Model, QuerySet
@@ -20,6 +25,10 @@ FieldMatrix = Union[str, Tuple[Any, ...]]
 class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     can_anonymize_qs: bool
     fields: Dict[str, FieldAnonymizer]
+    _base_encryption_key = None
+
+    def __init__(self, base_encryption_key: Optional[str] = None):
+        self._base_encryption_key = base_encryption_key
 
     @property
     def model(self) -> Type[Model]:
@@ -52,6 +61,24 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     def get(self, *args, **kwargs) -> Union[FieldAnonymizer, Any]:
         return self.fields.get(*args, **kwargs)
 
+    def _get_encryption_key(self, obj, field_name: str):
+        """Hash encryption key from `get_encryption_key` and append settings.SECRET_KEY."""
+        return hashlib.sha256(
+            f"{obj.pk}::{self.get_encryption_key(obj)}::{settings.SECRET_KEY}::{field_name}".encode(
+                "utf-8")).hexdigest()
+
+    def get_encryption_key(self, obj) -> str:
+        if not self.Meta.reversible_anonymization:  # type: ignore
+            return ''.join(random.choices(string.digits + string.ascii_letters, k=128))
+        if self._base_encryption_key:
+            return self._base_encryption_key
+        raise NotImplementedError(
+            f"The anonymizer '{self.__class__.__name__}' does not have `get_encryption_key` method defined or"
+            "reversible_anonymization set to False.")
+
+    def set_base_encryption_key(self, base_encryption_key: str):
+        self._base_encryption_key = base_encryption_key
+
     def is_field_anonymized(self, obj: Model, name: str) -> bool:
         """Check if field have AnonymizedData record"""
         return AnonymizedData.objects.filter(
@@ -80,7 +107,7 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
 
     def get_anonymized_value_from_obj(self, field: FieldAnonymizer, obj: Model, name: str) -> Any:
         """Get from field, obj and field name anonymized value."""
-        return field.get_anonymized_value_from_obj(obj, name)
+        return field.get_anonymized_value_from_obj(obj, name, self._get_encryption_key(obj, name))
 
     def perform_anonymization(self, obj: Model, updated_data: dict,
                               legal_reason: Optional[LegalReason] = None) -> None:
@@ -95,7 +122,10 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
 
     def anonymize_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
                       purpose: Optional["AbstractPurpose"] = None,
-                      fields: Union[Fields, FieldMatrix] = '__ALL__'):
+                      fields: Union[Fields, FieldMatrix] = '__ALL__', base_encryption_key: Optional[str] = None):
+
+        if base_encryption_key:
+            self._base_encryption_key = base_encryption_key
 
         parsed_fields: Fields = Fields(fields, obj.__class__) if not isinstance(fields, Fields) else fields
 
@@ -109,10 +139,14 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
             related_attribute = getattr(obj, name, None)
             related_metafield = getattr(obj.__class__, name, None)
             if self.is_reverse_relation(related_metafield):
-                for obj in related_attribute.all():
-                    related_fields.anonymizer.anonymize_obj(obj, legal_reason, purpose, related_fields)
+                for related_obj in related_attribute.all():
+                    related_fields.anonymizer.anonymize_obj(
+                        related_obj, legal_reason, purpose, related_fields,
+                        base_encryption_key=self._get_encryption_key(obj, name))
             elif self.is_forward_relation(related_metafield) and related_attribute is not None:
-                related_fields.anonymizer.anonymize_obj(related_attribute, legal_reason, purpose, related_fields)
+                related_fields.anonymizer.anonymize_obj(
+                    related_attribute, legal_reason, purpose, related_fields,
+                    base_encryption_key=self._get_encryption_key(obj, name))
 
 
 class ModelAnonymizer(ModelAnonymizerBase):
@@ -133,8 +167,8 @@ class DeleteModelAnonymizer(ModelAnonymizer):
     can_anonymize_qs = True
 
     def anonymize_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
-                      purpose: Optional["AbstractPurpose"] = None,
-                      fields: Union[Fields, FieldMatrix] = '__ALL__'):
+                          purpose: Optional["AbstractPurpose"] = None,
+                          fields: Union[Fields, FieldMatrix] = '__ALL__', base_encryption_key: Optional[str] = None):
         obj.__class__.objects.filter(pk=obj.pk).delete()
 
     def anonymize_qs(self, qs):

@@ -14,6 +14,10 @@ class CustomerAnonymizer(anonymizers.ModelAnonymizer):
     fb_id = anonymizers.CharFieldAnonymizer()
     last_login_ip = anonymizers.IPAddressFieldAnonymizer()
 
+    def get_encryption_key(self, obj: Customer):
+        return (f"{(obj.first_name or '').strip()}::{(obj.last_name or '').strip()}::"
+                f"{(obj.primary_email_address or '').strip()}")
+
     class Meta:
         model = Customer
 
@@ -23,6 +27,7 @@ class EmailAnonymizer(anonymizers.ModelAnonymizer):
 
     class Meta:
         model = Email
+        reversible_anonymization = True
 
 
 class AddressAnonymizer(anonymizers.ModelAnonymizer):
@@ -30,6 +35,7 @@ class AddressAnonymizer(anonymizers.ModelAnonymizer):
 
     class Meta:
         model = Address
+        reversible_anonymization = True
 
 
 class AccountAnonymizer(anonymizers.ModelAnonymizer):
@@ -38,6 +44,7 @@ class AccountAnonymizer(anonymizers.ModelAnonymizer):
 
     class Meta:
         model = Account
+        reversible_anonymization = True
 
 
 class PaymentAnonymizer(anonymizers.ModelAnonymizer):
@@ -46,6 +53,7 @@ class PaymentAnonymizer(anonymizers.ModelAnonymizer):
 
     class Meta:
         model = Payment
+        reversible_anonymization = True
 
 
 class ContactFormAnonymizer(anonymizers.ModelAnonymizer):
@@ -54,3 +62,4 @@ class ContactFormAnonymizer(anonymizers.ModelAnonymizer):
 
     class Meta:
         model = ContactForm
+        reversible_anonymization = False

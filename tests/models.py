@@ -35,6 +35,9 @@ class Customer(AnonymizationModel):
         self.full_name = "%s %s" % (self.first_name, self.last_name)
         super().save(*args, **kwargs)
 
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
 
 class Email(AnonymizationModel):
     """Example on anonymization on related field."""
