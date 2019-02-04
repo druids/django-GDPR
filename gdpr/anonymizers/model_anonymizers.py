@@ -1,12 +1,13 @@
-from typing import Any, Dict, ItemsView, Iterator, KeysView, List, Optional, TYPE_CHECKING, Tuple, Union, ValuesView
+from typing import (
+    Any, Dict, ItemsView, Iterator, KeysView, List, Optional, TYPE_CHECKING, Tuple, Type, Union, ValuesView)
 
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.db.models import Model, QuerySet
+from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor, ReverseManyToOneDescriptor
 
 from gdpr.anonymizers.base import FieldAnonymizer, ModelAnonymizerMeta
-from gdpr.loading import anonymizer_register
+from gdpr.fields import Fields
 from gdpr.models import AnonymizedData, LegalReason
 
 if TYPE_CHECKING:
@@ -21,7 +22,7 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     fields: Dict[str, FieldAnonymizer]
 
     @property
-    def model(self) -> Model:
+    def model(self) -> Type[Model]:
         return self.Meta.model  # type: ignore
 
     @property
@@ -57,38 +58,29 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
             field=name, is_active=True, content_type=self.content_type, object_id=str(obj.pk)
         ).exists()
 
+    def is_forward_relation(self, field) -> bool:
+        return isinstance(field, ForwardManyToOneDescriptor)
+
+    def is_reverse_relation(self, field) -> bool:
+        return isinstance(field, ReverseManyToOneDescriptor)
+
+    def get_related_model(self, field_name: str) -> Type[Model]:
+        field = getattr(self.model, field_name, None)
+        if field is None:
+            raise RuntimeError(f"Field '{field_name}' is not defined on {str(self.model)}")
+        elif self.is_reverse_relation(field):
+            return field.rel.related_model
+        elif self.is_forward_relation(field):
+            return field.field.related_model
+        else:
+            raise NotImplementedError(f"Relation {str(field)} not supported yet.")
+
     def mark_field_as_anonymized(self, obj: Model, name: str, legal_reason: Optional[LegalReason] = None) -> None:
         AnonymizedData(object=obj, field=name, expired_reason=legal_reason).save()
 
     def get_anonymized_value_from_obj(self, field: FieldAnonymizer, obj: Model, name: str) -> Any:
         """Get from field, obj and field name anonymized value."""
         return field.get_anonymized_value_from_obj(obj, name)
-
-    def get_local_fields(self, fields: FieldMatrix) -> FieldList:
-        """Get Iterable of local fields from fields matrix."""
-        if fields == "__ALL__":
-            return self.fields.keys()
-        for i in fields:
-            if type(i) not in [str, list, tuple]:
-                raise ImproperlyConfigured()
-        local_fields = [i for i in fields if type(i) == str]
-        if "__ALL__" in local_fields:
-            return self.fields.keys()
-        return local_fields
-
-    def get_related_fields(self, fields: FieldMatrix) -> Dict[str, Any]:
-        """Get Dictionary of related fields from fields matrix."""
-        related_fields = [i for i in fields if type(i) in [list, tuple]]
-        for i in related_fields:
-            if len(i) != 2:
-                raise ImproperlyConfigured()
-        return {i[0]: i[1] for i in related_fields}
-
-    def parse_fields_matrix(self, fields: FieldMatrix) -> Tuple[FieldList, Dict[str, Any]]:
-        """Parse fields matrix into local fields and related fields"""
-        if type(fields) not in [str, tuple, list]:
-            raise ImproperlyConfigured()
-        return self.get_local_fields(fields), self.get_related_fields(fields)
 
     def perform_anonymization(self, obj: Model, updated_data: dict,
                               legal_reason: Optional[LegalReason] = None) -> None:
@@ -103,23 +95,24 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
 
     def anonymize_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
                       purpose: Optional["AbstractPurpose"] = None,
-                      fields: FieldMatrix = "__ALL__"):
-        local_fields, related_fields = self.parse_fields_matrix(fields)
+                      fields: Union[Fields, FieldMatrix] = "__ALL__"):
+
+        parsed_fields: Fields = Fields(fields, obj.__class__) if not isinstance(fields, Fields) else fields
 
         # Filter out already anonymized fields
-        local_fields_non_anonymized = [i for i in local_fields if not self.is_field_anonymized(obj, i)]
-        update_dict = {name: self.get_anonymized_value_from_obj(self[name], obj, name) for name in
-                       local_fields_non_anonymized}
+        raw_local_fields = [i for i in parsed_fields.local_fields if not self.is_field_anonymized(obj, i)]
+        update_dict = {name: self.get_anonymized_value_from_obj(self[name], obj, name) for name in raw_local_fields}
 
         self.perform_anonymization(obj, update_dict, legal_reason)
 
-        for key in related_fields.keys():
-            related_attribute = getattr(obj, key)
-            o_anonymizer = None
-            for o in related_attribute.all():
-                if not o_anonymizer:
-                    o_anonymizer = anonymizer_register[o.__class__]
-                o_anonymizer().anonymize_obj(o, legal_reason, purpose=purpose, fields=related_fields[key])
+        for name, related_fields in parsed_fields.related_fields.items():
+            related_attribute = getattr(obj, name, None)
+            related_metafield = getattr(obj.__class__, name, None)
+            if self.is_reverse_relation(related_metafield):
+                for obj in related_attribute.all():
+                    related_fields.anonymizer.anonymize_obj(obj, legal_reason, purpose, related_fields)
+            elif self.is_forward_relation(related_metafield) and related_attribute is not None:
+                related_fields.anonymizer.anonymize_obj(related_attribute, legal_reason, purpose, related_fields)
 
 
 class ModelAnonymizer(ModelAnonymizerBase):
@@ -139,9 +132,9 @@ class DeleteModelAnonymizer(ModelAnonymizer):
 
     can_anonymize_qs = True
 
-    def anonymize_obj(self, obj: Model, legal_reason: Optional["LegalReason"] = None,
+    def anonymize_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
                       purpose: Optional["AbstractPurpose"] = None,
-                      fields: Optional[FieldMatrix] = "__ALL__"):
+                      fields: Union[Fields, FieldMatrix] = "__ALL__"):
         obj.__class__.objects.filter(pk=obj.pk).delete()
 
     def anonymize_qs(self, qs):

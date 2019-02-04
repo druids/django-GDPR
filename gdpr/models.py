@@ -167,7 +167,7 @@ class LegalReason(SmartModel):
     )
 
     @property
-    def purpose(self) -> "AbstractPurpose":
+    def purpose(self) -> Type["AbstractPurpose"]:
         return purpose_register.get(self.purpose_slug, None)
 
     def _anonymize_obj(self, *args, **kwargs):

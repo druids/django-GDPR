@@ -159,7 +159,7 @@ class AnonymizersRegister(BaseRegister[Model, Type["ModelAnonymizer"]]):
     loaders_settings = "ANONYMIZATION_LOADERS"
 
 
-class PurposesRegister(BaseRegister[str, "AbstractPurpose"]):
+class PurposesRegister(BaseRegister[str, Type["AbstractPurpose"]]):
     """
     PurposesRegister is storage for found purpose classes.
     """

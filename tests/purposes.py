@@ -42,7 +42,7 @@ class PaymentValuePurpose(AbstractPurpose):
         ("accounts", (
             ("payments", (
                 "value",
-            ))
+            )),
         )),
     )
 
@@ -70,7 +70,7 @@ class AccountsAndPaymentsPurpose(AbstractPurpose):
             ("payments", (
                 "value",
                 "date"
-            ))
+            )),
         )),
     )
 
