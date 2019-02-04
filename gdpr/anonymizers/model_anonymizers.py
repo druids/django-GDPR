@@ -85,10 +85,12 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
             field=name, is_active=True, content_type=self.content_type, object_id=str(obj.pk)
         ).exists()
 
-    def is_forward_relation(self, field) -> bool:
+    @staticmethod
+    def is_forward_relation(field) -> bool:
         return isinstance(field, ForwardManyToOneDescriptor)
 
-    def is_reverse_relation(self, field) -> bool:
+    @staticmethod
+    def is_reverse_relation(field) -> bool:
         return isinstance(field, ReverseManyToOneDescriptor)
 
     def get_related_model(self, field_name: str) -> Type[Model]:
@@ -102,22 +104,40 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
         else:
             raise NotImplementedError(f'Relation {str(field)} not supported yet.')
 
-    def mark_field_as_anonymized(self, obj: Model, name: str, legal_reason: Optional[LegalReason] = None) -> None:
+    def mark_field_as_anonymized(self, obj: Model, name: str, legal_reason: Optional[LegalReason] = None):
         AnonymizedData(object=obj, field=name, expired_reason=legal_reason).save()
+
+    def unmark_field_as_anonymized(self, obj: Model, name: str):
+        AnonymizedData.objects.filter(
+            field=name, is_active=True, content_type=self.content_type, object_id=str(obj.pk)).delete()
 
     def get_anonymized_value_from_obj(self, field: FieldAnonymizer, obj: Model, name: str) -> Any:
         """Get from field, obj and field name anonymized value."""
         return field.get_anonymized_value_from_obj(obj, name, self._get_encryption_key(obj, name))
 
+    def get_deanonymized_value_from_obj(self, field: FieldAnonymizer, obj: Model, name: str) -> Any:
+        """Get from field, obj and field name deanonymized value."""
+        return field.get_deanonymized_value_from_obj(obj, name, self._get_encryption_key(obj, name))
+
     def perform_anonymization(self, obj: Model, updated_data: dict,
-                              legal_reason: Optional[LegalReason] = None) -> None:
+                              legal_reason: Optional[LegalReason] = None):
         """Update data in database and mark them as anonymized."""
         with transaction.atomic():
             obj.__class__.objects.filter(pk=obj.pk).update(**updated_data)
             for i in updated_data.keys():
                 self.mark_field_as_anonymized(obj, i, legal_reason)
 
+    def perform_deanonymization(self, obj: Model, updated_data: dict):
+        """Update data in database and mark them as anonymized."""
+        with transaction.atomic():
+            obj.__class__.objects.filter(pk=obj.pk).update(**updated_data)
+            for i in updated_data.keys():
+                self.unmark_field_as_anonymized(obj, i)
+
     def anonymize_qs(self, qs: QuerySet) -> None:
+        raise NotImplementedError()
+
+    def deanonymize_qs(self, qs: QuerySet) -> None:
         raise NotImplementedError()
 
     def anonymize_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
@@ -148,6 +168,34 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
                     related_attribute, legal_reason, purpose, related_fields,
                     base_encryption_key=self._get_encryption_key(obj, name))
 
+    def deanonymize_obj(self, obj: Model, fields: Union[Fields, FieldMatrix] = '__ALL__',
+                        base_encryption_key: Optional[str] = None):
+
+        if base_encryption_key:
+            self._base_encryption_key = base_encryption_key
+
+        parsed_fields: Fields = Fields(fields, obj.__class__) if not isinstance(fields, Fields) else fields
+
+        # Filter out already anonymized fields
+        raw_local_fields = [i for i in parsed_fields.local_fields if
+                            self.is_field_anonymized(obj, i) and self[i].get_is_reversible(obj)]
+        update_dict = {name: self.get_deanonymized_value_from_obj(self[name], obj, name) for name in raw_local_fields}
+
+        self.perform_deanonymization(obj, update_dict)
+
+        for name, related_fields in parsed_fields.related_fields.items():
+            related_attribute = getattr(obj, name, None)
+            related_metafield = getattr(obj.__class__, name, None)
+            if self.is_reverse_relation(related_metafield):
+                for related_obj in related_attribute.all():
+                    related_fields.anonymizer.deanonymize_obj(
+                        related_obj, related_fields,
+                        base_encryption_key=self._get_encryption_key(obj, name))
+            elif self.is_forward_relation(related_metafield) and related_attribute is not None:
+                related_fields.anonymizer.deanonymize_obj(
+                    related_attribute, related_fields,
+                    base_encryption_key=self._get_encryption_key(obj, name))
+
 
 class ModelAnonymizer(ModelAnonymizerBase):
     """
@@ -167,8 +215,8 @@ class DeleteModelAnonymizer(ModelAnonymizer):
     can_anonymize_qs = True
 
     def anonymize_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
-                          purpose: Optional["AbstractPurpose"] = None,
-                          fields: Union[Fields, FieldMatrix] = '__ALL__', base_encryption_key: Optional[str] = None):
+                      purpose: Optional["AbstractPurpose"] = None,
+                      fields: Union[Fields, FieldMatrix] = '__ALL__', base_encryption_key: Optional[str] = None):
         obj.__class__.objects.filter(pk=obj.pk).delete()
 
     def anonymize_qs(self, qs):

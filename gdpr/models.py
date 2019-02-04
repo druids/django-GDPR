@@ -173,6 +173,9 @@ class LegalReason(SmartModel):
     def _anonymize_obj(self, *args, **kwargs):
         purpose_register[self.purpose_slug]().anonymize_obj(self.source_object, self, *args, **kwargs)
 
+    def _deanonymize_obj(self, *args, **kwargs):
+        purpose_register[self.purpose_slug]().deanonymize_obj(self.source_object, *args, **kwargs)
+
     def _expirement(self):
         """Anonymize obj and set `is_active=False`."""
         with transaction.atomic():
@@ -185,6 +188,13 @@ class LegalReason(SmartModel):
         self.expires_at = timezone.now()
         self.save()
         self._expirement()
+
+    def renew(self):
+        with transaction.atomic():
+            self.expires_at = timezone.now() + purpose_register[self.purpose_slug]().expiration_timedelta
+            self.is_active = True
+            self.save()
+            self._deanonymize_obj()
 
     def __str__(self):
         return f'{self.purpose.name}'

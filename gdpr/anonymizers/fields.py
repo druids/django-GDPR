@@ -31,17 +31,17 @@ class FunctionFieldAnonymizer(FieldAnonymizer):
     ```
     """
 
-    func: Callable
-    deanonymize_func: Callable = None
+    anon_func: Callable
+    deanonymize_func: Optional[Callable] = None
     max_anonymization_range: int
 
     def __init__(self,
-                 func: Union[Callable[[Any], Any], Callable[["FunctionFieldAnonymizer", Any], Any]],
+                 anon_func: Union[Callable[[Any], Any], Callable[["FunctionFieldAnonymizer", Any], Any]],
                  deanonymize_func: Callable[["FunctionFieldAnonymizer", Any], Any] = None,
                  *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        if callable(func):
-            self.func = func
+        if callable(anon_func):
+            self.anon_func = anon_func  # type: ignore
         else:
             raise ImproperlyConfigured('Supplied func is not callable.')
 
@@ -49,19 +49,24 @@ class FunctionFieldAnonymizer(FieldAnonymizer):
             self.deanonymize_func = deanonymize_func
         elif deanonymize_func is not None:
             raise ImproperlyConfigured('Supplied deanonymize_func is not callable.')
+        else:
+            self.is_reversible = False
 
     def get_numeric_encryption_key(self) -> int:
         return numerize_key(self.get_encryption_key()) % self.max_anonymization_range
 
     def get_encrypted_value(self, value):
         if self.deanonymize_func is None:
-            return self.func(value)
+            return self.anon_func(value)
         else:
-            return self.func(self, value)
+            return self.anon_func(self, value)
+
+    def get_is_reversible(self, obj=None):
+        return self.deanonymize_func is not None
 
     def get_decrypted_value(self, value):
-        if self.deanonymize_func is None:
-            raise ImproperlyConfigured('deanonymize_func not supplied.')
+        if not self.get_is_reversible():
+            raise self.IrreversibleAnonymizationException()
         else:
             return self.deanonymize_func(self, value)
 
@@ -147,7 +152,7 @@ class AccountNumberFieldAnonymizer(FieldAnonymizer):
         :return: (predcisli)-(cislo)/(kod_banky)
         """
         account = re.match('(([0-9]{0,6})-)?([0-9]{1,10})/([0-9]{4})', value)
-        return AccountNumber(account[2], account[3], account[4])
+        return AccountNumber(account[2], account[3], account[4])  # type: ignore
 
     def get_encrypted_value(self, value):
         account = self.parse_value(value)
@@ -187,23 +192,25 @@ class JSONFieldAnonymizer(FieldAnonymizer):
         if value is None:
             return None
         if type(value) is str:
-            return translate_message(self.get_encryption_key(), value, anonymize)
+            return translate_message(self.get_encryption_key(), value, anonymize)  # type: ignore
         if type(value) is int:
-            return value + self.get_numeric_encryption_key(value) * (1 if anonymize else -1)
+            return value + self.get_numeric_encryption_key(value) * (1 if anonymize else -1)  # type: ignore
         if type(value) is float:
             # 9.14 - 3.14 -> 3.1400000000000006 - (To avoid this we are using Decimal)
-            return float(Decimal(str(value)) + self.get_numeric_encryption_key(value) * (1 if anonymize else -1))
+            return float(
+                Decimal(str(value)) + self.get_numeric_encryption_key(value) * (1 if anonymize else -1))  # type: ignore
         if type(value) in [dict, list]:
-            return self.anonymize_json(value, anonymize)
+            return self.anonymize_json(value, anonymize)  # type: ignore
         if type(value) is bool and self.get_numeric_encryption_key() % 2 == 0:
             return not value
         return value
 
     def anonymize_json(self, json: Union[list, dict], anonymize: bool = True) -> Union[list, dict]:
         if type(json) == dict:
-            return {key: self.anonymize_json_value(value, anonymize) for key, value in json.items()}
+            return {key: self.anonymize_json_value(value, anonymize) for key, value in json.items()}  # type: ignore
         elif type(json) == list:
             return [self.anonymize_json_value(value, anonymize) for value in json]
+        raise ValueError
 
     def get_anonymized_value(self, value):
         warnings.warn('JSONFieldAnonymizer is not yet implemented.', UserWarning)
@@ -214,6 +221,7 @@ class StaticValueAnonymizer(FieldAnonymizer):
     """
     Static value anonymizer replaces value with defined static value.
     """
+    is_reversible = False
 
     def __init__(self, value: Any, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

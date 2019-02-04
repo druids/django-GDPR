@@ -6,6 +6,8 @@ https://github.com/PowerDNS/ipcipher
 IPv4 took from https://github.com/veorq/ipcrypt/blob/939549e3f542c7ae9eb1aec96164f19b5f9fc46c/ipcrypt.py under CC0
 """
 
+# type: ignore
+# flake8: noqa
 from ipaddress import ip_address, IPv4Address, IPv6Address
 from hashlib import pbkdf2_hmac
 from typing import Union
@@ -106,7 +108,7 @@ def encrypt_ipv4_bytes_key(key: bytes, ip: IPv4Address) -> str:
 def encrypt_ipv4(key: str, ip: IPv4Type) -> str:
     if not isinstance(ip, IPv4Address):
         ip = ip_address(ip)
-    return encrypt_ipv4_bytes_key(derive_key(key), ip)
+    return encrypt_ipv4_bytes_key(derive_key(key), ip)  # type: ignore
 
 
 def decrypt_ipv4_bytes_key(key: bytes, ip: IPv4Address) -> str:

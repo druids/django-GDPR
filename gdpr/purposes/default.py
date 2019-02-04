@@ -48,7 +48,16 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
     def get_parsed_fields(self, model: Type[Model]) -> Fields:
         return Fields(self.fields, model)
 
-    def anonymize_obj(self, obj: Type[Model], legal_reason: Optional["LegalReason"] = None,
+    def deanonymize_obj(self, obj: Model, fields: Optional[FieldMatrix] = None):
+        fields = fields or self.fields
+        if len(fields) == 0:
+            # If there are no fields to deanonymize do nothing.
+            return
+        obj_model = obj.__class__
+        anonymizer: "ModelAnonymizer" = anonymizer_register[obj_model]()
+        anonymizer.deanonymize_obj(obj, fields)
+
+    def anonymize_obj(self, obj: Model, legal_reason: Optional["LegalReason"] = None,
                       fields: Optional[FieldMatrix] = None):
         fields = fields or self.fields
         if len(fields) == 0:

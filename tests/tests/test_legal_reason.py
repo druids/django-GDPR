@@ -43,6 +43,19 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
         self.assertEqual(anon_customer.primary_email_address, CUSTOMER__EMAIL)
         self.assertAnonymizedDataNotExists(anon_customer, "primary_email_address")
 
+    def test_renew_legal_reason(self):
+        legal = LegalReason.objects.create_consent(FIRST_N_LAST_NAME_SLUG, self.customer)
+        legal.expire()
+        legal.renew()
+
+        anon_customer = Customer.objects.get(pk=self.customer.pk)
+
+        # Non reversible anonymization
+        self.assertNotEqual(anon_customer.first_name, CUSTOMER__FIRST_NAME)
+        self.assertAnonymizedDataExists(anon_customer, "first_name")
+        self.assertNotEqual(anon_customer.last_name, CUSTOMER__LAST_NAME)
+        self.assertAnonymizedDataExists(anon_customer, "last_name")
+
     def test_expirement_legal_reason_related(self):
         related_email: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL)
         related_email.save()
@@ -58,8 +71,8 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
 
         anon_customer = Customer.objects.get(pk=self.customer.pk)
 
-        self.assertNotEqual(anon_customer.primary_email_address, CUSTOMER__EMAIL)
-        self.assertAnonymizedDataExists(anon_customer, "primary_email_address")
+        self.assertEqual(anon_customer.primary_email_address, CUSTOMER__EMAIL)
+        self.assertAnonymizedDataNotExists(anon_customer, "primary_email_address")
 
         # make sure only data we want were anonymized
         self.assertEqual(anon_customer.first_name, CUSTOMER__FIRST_NAME)
@@ -79,6 +92,46 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
 
         self.assertNotEqual(anon_related_email3.email, CUSTOMER__EMAIL3)
         self.assertAnonymizedDataExists(anon_related_email3, "email")
+
+    def test_renew_legal_reason_related(self):
+        related_email: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL)
+        related_email.save()
+
+        related_email2: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL2)
+        related_email2.save()
+
+        related_email3: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL3)
+        related_email3.save()
+
+        legal = LegalReason.objects.create_consent(EMAIL_SLUG, self.customer)
+        legal.expire()
+
+        anon_legal = LegalReason.objects.get(pk=legal.pk)
+        anon_legal.renew()
+
+        anon_customer = Customer.objects.get(pk=self.customer.pk)
+
+        self.assertEqual(anon_customer.primary_email_address, CUSTOMER__EMAIL)
+        self.assertAnonymizedDataNotExists(anon_customer, "primary_email_address")
+
+        # make sure only data we want were anonymized
+        self.assertEqual(anon_customer.first_name, CUSTOMER__FIRST_NAME)
+        self.assertAnonymizedDataNotExists(anon_customer, "first_name")
+
+        anon_related_email: Email = Email.objects.get(pk=related_email.pk)
+
+        self.assertEqual(anon_related_email.email, CUSTOMER__EMAIL)
+        self.assertAnonymizedDataNotExists(anon_related_email, "email")
+
+        anon_related_email2: Email = Email.objects.get(pk=related_email2.pk)
+
+        self.assertEqual(anon_related_email2.email, CUSTOMER__EMAIL2)
+        self.assertAnonymizedDataNotExists(anon_related_email2, "email")
+
+        anon_related_email3: Email = Email.objects.get(pk=related_email3.pk)
+
+        self.assertEqual(anon_related_email3.email, CUSTOMER__EMAIL3)
+        self.assertAnonymizedDataNotExists(anon_related_email3, "email")
 
     def test_expirement_legal_reason_two_level_related(self):
         account_1: Account = Account(customer=self.customer, number=ACCOUNT__NUMBER, owner=ACCOUNT__OWNER)
@@ -112,9 +165,9 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
 
         anon_account_2: Account = Account.objects.get(pk=account_2.pk)
 
-        self.assertNotEqual(anon_account_2.number, ACCOUNT__NUMBER)
+        self.assertNotEqual(anon_account_2.number, ACCOUNT__NUMBER2)
         self.assertAnonymizedDataExists(anon_account_2, "number")
-        self.assertNotEqual(anon_account_2.owner, ACCOUNT__OWNER)
+        self.assertNotEqual(anon_account_2.owner, ACCOUNT__OWNER2)
         self.assertAnonymizedDataExists(anon_account_2, "owner")
 
         for payment in [payment_1, payment_2, payment_3, payment_4]:
@@ -124,6 +177,54 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
             self.assertAnonymizedDataExists(anon_payment, "value")
             self.assertNotEqual(anon_payment.date, payment.date)
             self.assertAnonymizedDataExists(anon_payment, "date")
+
+    def test_renew_legal_reason_two_level_related(self):
+        account_1: Account = Account(customer=self.customer, number=ACCOUNT__NUMBER, owner=ACCOUNT__OWNER)
+        account_1.save()
+        account_2: Account = Account(customer=self.customer, number=ACCOUNT__NUMBER2, owner=ACCOUNT__OWNER2)
+        account_2.save()
+
+        payment_1: Payment = Payment(account=account_1,
+                                     value=self.fake.pydecimal(left_digits=8, right_digits=2, positive=True))
+        payment_1.save()
+        payment_2: Payment = Payment(account=account_1,
+                                     value=self.fake.pydecimal(left_digits=8, right_digits=2, positive=True))
+        payment_2.save()
+
+        payment_3: Payment = Payment(account=account_2,
+                                     value=self.fake.pydecimal(left_digits=8, right_digits=2, positive=True))
+        payment_3.save()
+        payment_4: Payment = Payment(account=account_2,
+                                     value=self.fake.pydecimal(left_digits=8, right_digits=2, positive=True))
+        payment_4.save()
+
+        legal = LegalReason.objects.create_consent(ACCOUNT_N_PAYMENT_SLUG, self.customer)
+        legal.expire()
+
+        anon_legal = LegalReason.objects.get(pk=legal.pk)
+        anon_legal.renew()
+
+        anon_account_1: Account = Account.objects.get(pk=account_1.pk)
+
+        self.assertEqual(anon_account_1.number, ACCOUNT__NUMBER)
+        self.assertAnonymizedDataNotExists(anon_account_1, "number")
+        self.assertEqual(anon_account_1.owner, ACCOUNT__OWNER)
+        self.assertAnonymizedDataNotExists(anon_account_1, "owner")
+
+        anon_account_2: Account = Account.objects.get(pk=account_2.pk)
+
+        self.assertEqual(anon_account_2.number, ACCOUNT__NUMBER2)
+        self.assertAnonymizedDataNotExists(anon_account_2, "number")
+        self.assertEqual(anon_account_2.owner, ACCOUNT__OWNER2)
+        self.assertAnonymizedDataNotExists(anon_account_2, "owner")
+
+        for payment in [payment_1, payment_2, payment_3, payment_4]:
+            anon_payment: Payment = Payment.objects.get(pk=payment.pk)
+
+            self.assertEqual(anon_payment.value, payment.value)
+            self.assertAnonymizedDataNotExists(anon_payment, "value")
+            self.assertEqual(anon_payment.date, payment.date)
+            self.assertAnonymizedDataNotExists(anon_payment, "date")
 
     def test_email_purpose(self):
         LegalReason.objects.create_consent(EMAIL_SLUG, self.customer)
@@ -184,8 +285,8 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
         self.assertAnonymizedDataNotExists(anon_customer, 'first_name')
         self.assertEqual(anon_customer.last_name, CUSTOMER__LAST_NAME)
         self.assertAnonymizedDataNotExists(anon_customer, 'last_name')
-        self.assertEqual(anon_customer.primary_email_address, CUSTOMER__EMAIL)
-        self.assertAnonymizedDataNotExists(anon_customer, 'primary_email_address')
+        self.assertNotEqual(anon_customer.primary_email_address, CUSTOMER__EMAIL)
+        self.assertAnonymizedDataExists(anon_customer, 'primary_email_address')
 
         self.assertNotEqual(anon_customer.birth_date, CUSTOMER__BIRTH_DATE)
         self.assertAnonymizedDataExists(anon_customer, 'birth_date')

@@ -28,6 +28,9 @@ class FieldAnonymizer:
     _encryption_key = None
     is_reversible: bool = True
 
+    class IrreversibleAnonymizationException(Exception):
+        pass
+
     def __init__(self, ignore_empty_values: bool = None, empty_values: Optional[List[Any]] = None):
         """
         Args:
@@ -37,12 +40,25 @@ class FieldAnonymizer:
         self._ignore_empty_values = ignore_empty_values if ignore_empty_values is not None else self.ignore_empty_values
         self._empty_values = empty_values if empty_values is not None else self.empty_values
 
+    def get_is_reversible(self, obj=None) -> bool:
+        """This method allows for custom implementation."""
+        return self.is_reversible
+
     def get_anonymized_value_from_obj(self, obj, name: str, encryption_key: Optional[str] = None):
         value = getattr(obj, name)
         if self._ignore_empty_values and value in self._empty_values:
             return value
         self._encryption_key = encryption_key
         return self.get_anonymized_value(value)
+
+    def get_deanonymized_value_from_obj(self, obj, name: str, encryption_key: Optional[str] = None):
+        if self.get_is_reversible(obj) is False:
+            raise self.IrreversibleAnonymizationException()
+        value = getattr(obj, name)
+        if self._ignore_empty_values and value in self._empty_values:
+            return value
+        self._encryption_key = encryption_key
+        return self.get_decrypted_value(value)
 
     def get_encryption_key(self):
         """Return encryption key to use.
@@ -91,7 +107,7 @@ class FieldAnonymizer:
         """
         if self.is_reversible:
             raise NotImplementedError
-        return value
+        return self.IrreversibleAnonymizationException()
 
 
 class NumericFieldAnonymizer(FieldAnonymizer):
@@ -109,7 +125,6 @@ class NumericFieldAnonymizer(FieldAnonymizer):
         # safety measure against key getting one bigger (overflow) on decrypt e.g. (5)=1 -> 5 + 8 = 13 -> (13)=2
         guess_len = len(str(int(value)))
         return numerize_key(self.get_encryption_key()) % 10 ** (guess_len if guess_len % 2 != 0 else (guess_len - 1))
-
 
 
 class ModelAnonymizerMeta(type):

@@ -27,7 +27,6 @@ class EmailsPurpose(AbstractPurpose):
     slug = EMAIL_SLUG
     expiration_timedelta = relativedelta(years=5)
     fields = (
-        "primary_email_address",
         ("emails", (
             "email",
         )),

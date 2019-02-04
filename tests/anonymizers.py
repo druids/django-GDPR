@@ -40,7 +40,7 @@ class AddressAnonymizer(anonymizers.ModelAnonymizer):
 
 class AccountAnonymizer(anonymizers.ModelAnonymizer):
     number = anonymizers.AccountNumberFieldAnonymizer()
-    owner = anonymizers.NameFieldAnonymizer()
+    owner = anonymizers.CharFieldAnonymizer()
 
     class Meta:
         model = Account
