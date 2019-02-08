@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, KeysView, List, Optional, TYPE_CHECKING, Tuple, Type, Union
+from typing import Any, Dict, KeysView, List, Optional, TYPE_CHECKING, Tuple, Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model, Q
@@ -41,7 +41,7 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
 
     name: str
     slug: str
-    fields: Union[str, Tuple[Any, ...]]
+    fields: Union[str, Tuple[Any, ...], None] = None
     expiration_timedelta: Any
     anonymize_legal_reason_related_objects_only: bool = False  # @TODO: Add support
 
@@ -49,7 +49,7 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
         return Fields(self.fields, model)
 
     def deanonymize_obj(self, obj: Model, fields: Optional[FieldMatrix] = None):
-        fields = fields or self.fields
+        fields = fields or self.fields or ()
         if len(fields) == 0:
             # If there are no fields to deanonymize do nothing.
             return
@@ -59,7 +59,7 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
 
     def anonymize_obj(self, obj: Model, legal_reason: Optional["LegalReason"] = None,
                       fields: Optional[FieldMatrix] = None):
-        fields = fields or self.fields
+        fields = fields or self.fields or ()
         if len(fields) == 0:
             # If there are no fields to anonymize do nothing.
             return
