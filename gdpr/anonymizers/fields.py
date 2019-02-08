@@ -8,7 +8,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
 from gdpr.encryption import (
-    NUMBERS, decrypt_email, decrypt_message, encrypt_email, encrypt_message, numerize_key, translate_message)
+    NUMBERS, decrypt_email, decrypt_message, encrypt_email, encrypt_message, numerize_key, translate_message,
+    translate_IBAN)
 from gdpr.ipcypher import decrypt_ip, encrypt_ip
 
 
@@ -139,7 +140,7 @@ class IPAddressFieldAnonymizer(FieldAnonymizer):
 AccountNumber = namedtuple('AccountNumber', ['pre_num', 'num', 'bank'])
 
 
-class AccountNumberFieldAnonymizer(FieldAnonymizer):
+class CzechAccountNumberFieldAnonymizer(FieldAnonymizer):
     """
     Anonymization for czech account number.
     """
@@ -172,6 +173,18 @@ class AccountNumberFieldAnonymizer(FieldAnonymizer):
             return f'{account.pre_num}-{decrypted_account_num}/{account.bank}'
         else:
             return f'{decrypted_account_num}/{account.bank}'
+
+
+class IBANFieldAnonymizer(FieldAnonymizer):
+    """
+    Field anonymizer for International Bank Account Number.
+    """
+
+    def get_decrypted_value(self, value: Any):
+        return translate_IBAN(self.get_encryption_key(), value)
+
+    def get_encrypted_value(self, value: Any):
+        return translate_IBAN(self.get_encryption_key(), value, False)
 
 
 class JSONFieldAnonymizer(FieldAnonymizer):

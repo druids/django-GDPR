@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from gdpr.anonymizers import (
     CharFieldAnonymizer, EmailFieldAnonymizer, DateFieldAnonymizer, DecimalFieldAnonymizer,
-    IPAddressFieldAnonymizer, AccountNumberFieldAnonymizer, StaticValueAnonymizer)
+    IPAddressFieldAnonymizer, CzechAccountNumberFieldAnonymizer, StaticValueAnonymizer)
 from gdpr.anonymizers.fields import FunctionFieldAnonymizer, JSONFieldAnonymizer
 
 
@@ -108,7 +108,7 @@ class TestIPAddressField(TestCase):
 class TestAccountNumberField(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.field = AccountNumberFieldAnonymizer()
+        cls.field = CzechAccountNumberFieldAnonymizer()
         cls.field._encryption_key = 'LoremIpsumDolorSitAmet'
 
     def test_account_number_simple_field(self):

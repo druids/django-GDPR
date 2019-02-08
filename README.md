@@ -171,7 +171,7 @@ LegalReason.objects.expire_old_consents()
 * `CharFieldAnonymizer`
 * `DecimalFieldAnonymizer`
 * `IPAddressFieldAnonymizer`
-* `AccountNumberFieldAnonymizer` - for czech bank account numbers
+* `CzechAccountNumberFieldAnonymizer` - for czech bank account numbers
 * `JSONFieldAnonymizer`
 * `EmailFieldAnonymizer`
 * `MD5TextFieldAnonymizer`

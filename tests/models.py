@@ -57,6 +57,8 @@ class Address(AnonymizationModel):
 class Account(AnonymizationModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="accounts")
     number = models.CharField(max_length=256, blank=True, null=True)
+    IBAN = models.CharField(max_length=34, blank=True, null=True)
+    swift = models.CharField(max_length=11, blank=True, null=True)
     owner = models.CharField(max_length=256, blank=True, null=True)
 
 

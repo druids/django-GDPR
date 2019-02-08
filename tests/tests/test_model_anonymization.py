@@ -5,7 +5,7 @@ from tests.models import Account, Address, ContactForm, Customer, Email, Payment
 from .data import (
     ACCOUNT__NUMBER, ACCOUNT__OWNER, ADDRESS__CITY, ADDRESS__HOUSE_NUMBER, ADDRESS__POST_CODE, ADDRESS__STREET,
     CUSTOMER__BIRTH_DATE, CUSTOMER__EMAIL, CUSTOMER__FB_ID, CUSTOMER__FIRST_NAME, CUSTOMER__IP, CUSTOMER__KWARGS,
-    CUSTOMER__LAST_NAME, CUSTOMER__PERSONAL_ID, CUSTOMER__PHONE_NUMBER, PAYMENT__VALUE)
+    CUSTOMER__LAST_NAME, CUSTOMER__PERSONAL_ID, CUSTOMER__PHONE_NUMBER, PAYMENT__VALUE, ACCOUNT__IBAN, ACCOUNT__SWIFT)
 from .utils import AnonymizedDataMixin, NotImplementedMixin
 
 
@@ -69,7 +69,9 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         self.account: Account = Account(
             customer=self.customer,
             number=ACCOUNT__NUMBER,
-            owner=ACCOUNT__OWNER
+            owner=ACCOUNT__OWNER,
+            IBAN=ACCOUNT__IBAN,
+            swift=ACCOUNT__SWIFT,
         )
         self.account.save()
         self.account._anonymize_obj(base_encryption_key=self.base_encryption_key)
@@ -80,12 +82,16 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         self.assertAnonymizedDataExists(anon_account, "number")
         self.assertNotEqual(anon_account.owner, ACCOUNT__OWNER)
         self.assertAnonymizedDataExists(anon_account, "owner")
+        self.assertNotEqual(anon_account.IBAN, ACCOUNT__IBAN)
+        self.assertAnonymizedDataExists(anon_account, "IBAN")
 
     def test_payment(self):
         self.account: Account = Account(
             customer=self.customer,
             number=ACCOUNT__NUMBER,
-            owner=ACCOUNT__OWNER
+            owner=ACCOUNT__OWNER,
+            IBAN=ACCOUNT__IBAN,
+            swift=ACCOUNT__SWIFT,
         )
         self.account.save()
         self.payment: Payment = Payment(
