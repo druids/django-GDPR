@@ -1,16 +1,15 @@
 import re
-import warnings
 from collections import namedtuple
 from datetime import timedelta
 from decimal import Decimal
-from typing import Any, Callable, Optional, List, Union
+from typing import Any, Callable, Optional, Union
 
 from django.core.exceptions import ImproperlyConfigured
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
 from gdpr.encryption import (
-    encrypt_message, decrypt_message, encrypt_email, decrypt_email, numerize_key, NUMBERS, translate_message)
-from gdpr.ipcypher import encrypt_ip, decrypt_ip
+    NUMBERS, decrypt_email, decrypt_message, encrypt_email, encrypt_message, numerize_key, translate_message)
+from gdpr.ipcypher import decrypt_ip, encrypt_ip
 
 
 class FunctionFieldAnonymizer(FieldAnonymizer):
@@ -212,9 +211,11 @@ class JSONFieldAnonymizer(FieldAnonymizer):
             return [self.anonymize_json_value(value, anonymize) for value in json]
         raise ValueError
 
-    def get_anonymized_value(self, value):
-        warnings.warn('JSONFieldAnonymizer is not yet implemented.', UserWarning)
-        return value
+    def get_encrypted_value(self, value):
+        return self.anonymize_json(value)
+
+    def get_decrypted_value(self, value):
+        return self.anonymize_json(value, anonymize=False)
 
 
 class StaticValueAnonymizer(FieldAnonymizer):
