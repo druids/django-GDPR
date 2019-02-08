@@ -1,6 +1,7 @@
 import hashlib
 import random
 import string
+import warnings
 from typing import (
     Any, Dict, ItemsView, Iterator, KeysView, List, Optional, TYPE_CHECKING, Type, Tuple, Union,
     ValuesView)
@@ -11,7 +12,7 @@ from django.db import transaction
 from django.db.models import Model, QuerySet
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor, ReverseManyToOneDescriptor
 
-from gdpr.anonymizers.base import FieldAnonymizer, ModelAnonymizerMeta
+from gdpr.anonymizers.base import FieldAnonymizer, ModelAnonymizerMeta, RelationAnonymizer
 from gdpr.fields import Fields
 from gdpr.models import AnonymizedData, LegalReason
 
@@ -26,6 +27,9 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     can_anonymize_qs: bool
     fields: Dict[str, FieldAnonymizer]
     _base_encryption_key = None
+
+    class IrreversibleAnonymizerException(Exception):
+        pass
 
     def __init__(self, base_encryption_key: Optional[str] = None):
         self._base_encryption_key = base_encryption_key
@@ -67,13 +71,19 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
             f"{obj.pk}::{self.get_encryption_key(obj)}::{settings.SECRET_KEY}::{field_name}".encode(
                 "utf-8")).hexdigest()
 
+    def is_reversible(self, obj) -> bool:
+        if hasattr(self.Meta, "reversible_anonymization"):  # type: ignore
+            return self.Meta.reversible_anonymization  # type: ignore
+        return True
+
     def get_encryption_key(self, obj) -> str:
-        if not self.Meta.reversible_anonymization:  # type: ignore
+        if not self.is_reversible(obj):
             return ''.join(random.choices(string.digits + string.ascii_letters, k=128))
         if self._base_encryption_key:
             return self._base_encryption_key
         raise NotImplementedError(
-            f"The anonymizer '{self.__class__.__name__}' does not have `get_encryption_key` method defined or"
+            f"The anonymizer '{self.__class__.__name__}' does not have `get_encryption_key` method defined or "
+            "`base_encryption_key` supplied during anonymization or "
             "reversible_anonymization set to False.")
 
     def set_base_encryption_key(self, base_encryption_key: str):
@@ -93,9 +103,15 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     def is_reverse_relation(field) -> bool:
         return isinstance(field, ReverseManyToOneDescriptor)
 
+    @staticmethod
+    def is_generic_relation(field) -> bool:
+        return isinstance(field, RelationAnonymizer)
+
     def get_related_model(self, field_name: str) -> Type[Model]:
         field = getattr(self.model, field_name, None)
         if field is None:
+            if self.is_generic_relation(getattr(self, field_name, None)):
+                return getattr(self, field_name).get_related_model()
             raise RuntimeError(f'Field \'{field_name}\' is not defined on {str(self.model)}')
         elif self.is_reverse_relation(field):
             return field.rel.related_model
@@ -167,9 +183,22 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
                 related_fields.anonymizer.anonymize_obj(
                     related_attribute, legal_reason, purpose, related_fields,
                     base_encryption_key=self._get_encryption_key(obj, name))
+            elif related_attribute is None and related_metafield is None:
+                if self.is_generic_relation(getattr(self, name, None)):
+                    objs = getattr(self, name).get_related_objects(obj)
+                    for related_obj in objs:
+                        related_fields.anonymizer.anonymize_obj(
+                            related_obj, legal_reason, purpose, related_fields,
+                            base_encryption_key=self._get_encryption_key(obj, name))
+            else:
+                warnings.warn(f'Model anonymization discovered unreachable field {name} on model'
+                              f'{obj.__class__.__name__} on obj {obj} with pk {obj.pk}')
 
     def deanonymize_obj(self, obj: Model, fields: Union[Fields, FieldMatrix] = '__ALL__',
                         base_encryption_key: Optional[str] = None):
+
+        if not self.is_reversible(obj):
+            raise self.IrreversibleAnonymizerException(f'{self.__class__.__name__} for obj "{obj}" is not reversible.')
 
         if base_encryption_key:
             self._base_encryption_key = base_encryption_key
@@ -195,6 +224,16 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
                 related_fields.anonymizer.deanonymize_obj(
                     related_attribute, related_fields,
                     base_encryption_key=self._get_encryption_key(obj, name))
+            elif related_attribute is None and related_metafield is None:
+                if self.is_generic_relation(getattr(self, name, None)):
+                    objs = getattr(self, name).get_related_objects(obj)
+                    for related_obj in objs:
+                        related_fields.anonymizer.deanonymize_obj(
+                            related_obj, related_fields,
+                            base_encryption_key=self._get_encryption_key(obj, name))
+            else:
+                warnings.warn(f'Model anonymization discovered unreachable field {name} on model'
+                              f'{obj.__class__.__name__} on obj {obj} with pk {obj.pk}')
 
 
 class ModelAnonymizer(ModelAnonymizerBase):

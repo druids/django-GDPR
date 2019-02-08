@@ -1,6 +1,7 @@
 from django.test import TestCase
 
-from tests.models import Account, Address, ContactForm, Customer, Email, Payment
+from gdpr.anonymizers import ModelAnonymizer
+from tests.models import Account, Address, ContactForm, Customer, Email, Payment, Note
 from .data import (
     ACCOUNT__NUMBER, ACCOUNT__OWNER, ADDRESS__CITY, ADDRESS__HOUSE_NUMBER, ADDRESS__POST_CODE, ADDRESS__STREET,
     CUSTOMER__BIRTH_DATE, CUSTOMER__EMAIL, CUSTOMER__FB_ID, CUSTOMER__FIRST_NAME, CUSTOMER__IP, CUSTOMER__KWARGS,
@@ -175,3 +176,46 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         self.assertNotEqual(anon_related_email.email, CUSTOMER__EMAIL)
         self.assertAnonymizedDataExists(anon_related_email, "email")
+
+    def test_reverse_generic_relation(self):
+        note: Note = Note(note="Test message")
+        note.content_object = self.customer
+        note.save()
+
+        self.customer._anonymize_obj(fields=(('notes', '__ALL__'),))
+
+        anon_note: Note = Note.objects.get(pk=note.pk)
+
+        self.assertNotEqual(anon_note.note, note.note)
+        self.assertAnonymizedDataExists(note, 'note')
+
+        self.customer._deanonymize_obj(fields=(('notes', '__ALL__'),))
+
+        anon_note2: Note = Note.objects.get(pk=note.pk)
+
+        self.assertEqual(anon_note2.note, note.note)
+        self.assertAnonymizedDataNotExists(note, 'note')
+
+    def test_irreversible_deanonymization(self):
+        contact_form: ContactForm = ContactForm(email=CUSTOMER__EMAIL, full_name=CUSTOMER__LAST_NAME)
+        contact_form.save()
+        contact_form._anonymize_obj(fields=('__ALL__'))
+
+        self.assertRaises(ModelAnonymizer.IrreversibleAnonymizerException, contact_form._deanonymize_obj,
+                          fields=('__ALL__'))
+
+    def test_generic_relation_anonymizer(self):
+        contact_form: ContactForm = ContactForm(email=CUSTOMER__EMAIL, full_name=CUSTOMER__LAST_NAME)
+        contact_form.save()
+        note: Note = Note(note="Test message")
+        note.content_object = contact_form
+        note.save()
+
+        note._anonymize_obj(fields=(('contact_form', '__ALL__'),), base_encryption_key=self.base_encryption_key)
+
+        anon_contact_form: ContactForm = ContactForm.objects.get(pk=contact_form.pk)
+
+        self.assertNotEqual(anon_contact_form.email, CUSTOMER__EMAIL)
+        self.assertAnonymizedDataExists(anon_contact_form, 'email')
+        self.assertNotEqual(anon_contact_form.full_name, CUSTOMER__LAST_NAME)
+        self.assertAnonymizedDataExists(anon_contact_form, 'full_name')

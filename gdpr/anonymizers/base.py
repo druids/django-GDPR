@@ -14,7 +14,10 @@ class RelationAnonymizer:
     Base class for Anonymizers defining special relations.
     """
 
-    def get_related_objects(self) -> Iterable:
+    def get_related_objects(self, obj: Model) -> Iterable:
+        raise NotImplementedError
+
+    def get_related_model(self) -> Model:
         raise NotImplementedError
 
 

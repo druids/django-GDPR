@@ -20,6 +20,13 @@ class AnonymizationModelMixin:
         else:
             raise ImproperlyConfigured('%s does not have registered anonymizer.' % self.__class__)
 
+    def _deanonymize_obj(self, *args, **kwargs):
+        from gdpr.loading import anonymizer_register
+        if self.__class__ in anonymizer_register:
+            anonymizer_register[self.__class__]().deanonymize_obj(self, *args, **kwargs)
+        else:
+            raise ImproperlyConfigured('%s does not have registered anonymizer.' % self.__class__)
+
     def get_consents(self) -> QuerySet:
         return LegalReason.objects.filter_source_instance(self)
 

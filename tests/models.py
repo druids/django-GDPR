@@ -8,7 +8,8 @@ Customer
     - Payment
 
 """
-
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 from gdpr.mixins import AnonymizationModel
@@ -69,3 +70,10 @@ class Payment(AnonymizationModel):
 class ContactForm(AnonymizationModel):
     email = models.EmailField()
     full_name = models.CharField(max_length=256)
+
+
+class Note(AnonymizationModel):
+    note = models.TextField()
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')

@@ -1,7 +1,7 @@
 from .fields import (
     AccountNumberFieldAnonymizer, CharFieldAnonymizer, DateFieldAnonymizer, DecimalFieldAnonymizer,
     FunctionFieldAnonymizer, IPAddressFieldAnonymizer, StaticValueAnonymizer, EmailFieldAnonymizer)
-from .generic_relation import ReverseGenericRelationAnonymizer
+from .generic_relation import ReverseGenericRelationAnonymizer, GenericRelationAnonymizer
 from .gis import GISPointFieldAnonymizer
 from .hash_fields import HashTextFieldAnonymizer, MD5TextFieldAnonymizer, SHA256TextFieldAnonymizer
 from .legacy_fields import (
@@ -15,5 +15,5 @@ __all__ = [
     "MD5TextFieldAnonymizer", "EmailFieldAnonymizer", "UsernameFieldAnonymizer", "NameFieldAnonymizer",
     "PhoneFieldAnonymizer", "PersonalIIDFieldAnonymizer", "IDCardDataFieldAnonymizer", "DummyFileAnonymizer",
     "GISPointFieldAnonymizer", "ReverseGenericRelationAnonymizer", "SHA256TextFieldAnonymizer",
-    "HashTextFieldAnonymizer"
+    "HashTextFieldAnonymizer", "GenericRelationAnonymizer"
 ]
