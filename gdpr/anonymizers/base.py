@@ -1,12 +1,9 @@
-from typing import Any, List, Iterable, Optional, TYPE_CHECKING, Union
+from typing import Any, Iterable, List, Optional, TYPE_CHECKING, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model
 
 from gdpr.encryption import numerize_key
-
-if TYPE_CHECKING:
-    from gdpr.anonymizers import ModelAnonymizer
 
 
 class RelationAnonymizer:
@@ -58,6 +55,22 @@ class FieldAnonymizer:
         if self.get_is_reversible(obj) is False:
             raise self.IrreversibleAnonymizationException()
         value = getattr(obj, name)
+        if self._ignore_empty_values and value in self._empty_values:
+            return value
+        self._encryption_key = encryption_key
+        return self.get_decrypted_value(value)
+
+    def get_anonymized_value_from_version(self, obj, version, name: str, encryption_key: Optional[str] = None):
+        value = version.field_dict[name]
+        if self._ignore_empty_values and value in self._empty_values:
+            return value
+        self._encryption_key = encryption_key
+        return self.get_anonymized_value(value)
+
+    def get_deanonymized_value_from_version(self, obj, version, name: str, encryption_key: Optional[str] = None):
+        if self.get_is_reversible(obj) is False:
+            raise self.IrreversibleAnonymizationException()
+        value = version.field_dict[name]
         if self._ignore_empty_values and value in self._empty_values:
             return value
         self._encryption_key = encryption_key

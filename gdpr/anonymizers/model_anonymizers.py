@@ -3,14 +3,15 @@ import random
 import string
 import warnings
 from typing import (
-    Any, Dict, ItemsView, Iterator, KeysView, List, Optional, TYPE_CHECKING, Type, Tuple, Union,
-    ValuesView)
+    Any, Dict, ItemsView, Iterator, KeysView, List, Optional, TYPE_CHECKING, Tuple, Type, Union, ValuesView)
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.core import serializers
 from django.db import transaction
 from django.db.models import Model, QuerySet
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor, ReverseManyToOneDescriptor
+from reversion.revisions import _get_options
 
 from gdpr.anonymizers.base import FieldAnonymizer, ModelAnonymizerMeta, RelationAnonymizer
 from gdpr.fields import Fields
@@ -76,6 +77,11 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
             return self.Meta.reversible_anonymization  # type: ignore
         return True
 
+    def anonymize_reversion(self, obj) -> bool:
+        if hasattr(self.Meta, "anonymize_reversion"):  # type: ignore
+            return self.Meta.anonymize_reversion  # type: ignore
+        return False
+
     def get_encryption_key(self, obj) -> str:
         if not self.is_reversible(obj):
             return ''.join(random.choices(string.digits + string.ascii_letters, k=128))
@@ -135,20 +141,67 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
         """Get from field, obj and field name deanonymized value."""
         return field.get_deanonymized_value_from_obj(obj, name, self._get_encryption_key(obj, name))
 
+    def get_anonymized_value_from_version(self, field: FieldAnonymizer, obj: Model, version, name: str) -> Any:
+        """Get from field, obj and field name anonymized value."""
+        return field.get_anonymized_value_from_version(obj, version, name, self._get_encryption_key(obj, name))
+
+    def get_deanonymized_value_from_version(self, field: FieldAnonymizer, obj: Model, version, name: str) -> Any:
+        """Get from field, obj and field name deanonymized value."""
+        return field.get_deanonymized_value_from_version(obj, version, name, self._get_encryption_key(obj, name))
+
+    def _perform_anonymization(self, obj: Model, updated_data: dict,
+                               legal_reason: Optional[LegalReason] = None):
+        obj.__class__.objects.filter(pk=obj.pk).update(**updated_data)
+        for i in updated_data.keys():
+            self.mark_field_as_anonymized(obj, i, legal_reason)
+
+    def _perform_deanonymization(self, obj: Model, updated_data: dict):
+        obj.__class__.objects.filter(pk=obj.pk).update(**updated_data)
+        for i in updated_data.keys():
+            self.unmark_field_as_anonymized(obj, i)
+
     def perform_anonymization(self, obj: Model, updated_data: dict,
                               legal_reason: Optional[LegalReason] = None):
         """Update data in database and mark them as anonymized."""
         with transaction.atomic():
-            obj.__class__.objects.filter(pk=obj.pk).update(**updated_data)
-            for i in updated_data.keys():
-                self.mark_field_as_anonymized(obj, i, legal_reason)
+            self._perform_anonymization(obj, updated_data, legal_reason)
 
     def perform_deanonymization(self, obj: Model, updated_data: dict):
         """Update data in database and mark them as anonymized."""
         with transaction.atomic():
-            obj.__class__.objects.filter(pk=obj.pk).update(**updated_data)
-            for i in updated_data.keys():
-                self.unmark_field_as_anonymized(obj, i)
+            self._perform_deanonymization(obj, updated_data)
+
+    @staticmethod
+    def _perform_version_update(model: Type[Model], version, update_data):
+        version_dict_local = dict(version.field_dict)
+        version_dict_local.update(update_data)
+        local_obj = model(**version_dict_local)
+        version_options = _get_options(model)
+        version.serialized_data = serializers.serialize(
+            version_options.format,
+            (local_obj,),
+            fields=version_options.fields
+        )
+        version.save()
+
+    def perform_anonymization_with_version(self, obj: Model, updated_data: Dict[str, Any],
+                                           updated_version_data: List[Tuple[Any, Dict]],
+                                           legal_reason: Optional[LegalReason] = None):
+        """Update data in database and versions and mark them as anonymized."""
+        with transaction.atomic():
+            # first we need to update versions
+            for version, version_dict in updated_version_data:
+                self._perform_version_update(obj.__class__, version, version_dict)
+            self._perform_anonymization(obj, updated_data, legal_reason)
+
+    def perform_deanonymization_with_version(self, obj: Model, updated_data: Dict,
+                                             updated_version_data: List[Tuple[Any, Dict]]):
+        """Update data in database and mark them as anonymized."""
+        with transaction.atomic():
+            # first we need to update versions
+            for version, version_dict in updated_version_data:
+                self._perform_version_update(obj.__class__, version, version_dict)
+            self._perform_deanonymization(obj, updated_data)
 
     def anonymize_qs(self, qs: QuerySet) -> None:
         raise NotImplementedError()
@@ -169,7 +222,23 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
         raw_local_fields = [i for i in parsed_fields.local_fields if not self.is_field_anonymized(obj, i)]
         update_dict = {name: self.get_anonymized_value_from_obj(self[name], obj, name) for name in raw_local_fields}
 
-        self.perform_anonymization(obj, update_dict, legal_reason)
+        if self.anonymize_reversion(obj):
+            from reversion.models import Version
+            versions: List[Version] = Version.objects.get_for_object(obj)
+            versions_update_dict = [
+                (
+                    version,
+                    {
+                        name: self.get_anonymized_value_from_version(self[name], obj, version, name)
+                        for name in raw_local_fields
+                        if name in version._local_field_dict
+                    }
+                )
+                for version in versions
+            ]
+            self.perform_anonymization_with_version(obj, update_dict, versions_update_dict, legal_reason)
+        else:
+            self.perform_anonymization(obj, update_dict, legal_reason)
 
         for name, related_fields in parsed_fields.related_fields.items():
             related_attribute = getattr(obj, name, None)
@@ -210,7 +279,22 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
                             self.is_field_anonymized(obj, i) and self[i].get_is_reversible(obj)]
         update_dict = {name: self.get_deanonymized_value_from_obj(self[name], obj, name) for name in raw_local_fields}
 
-        self.perform_deanonymization(obj, update_dict)
+        if self.anonymize_reversion(obj):
+            from reversion.models import Version
+            versions = Version.objects.get_for_object(obj)
+            versions_update_dict = [
+                (
+                    version,
+                    {
+                        name: self.get_deanonymized_value_from_version(self[name], obj, version, name)
+                        for name in raw_local_fields
+                    }
+                )
+                for version in versions
+            ]
+            self.perform_deanonymization_with_version(obj, update_dict, versions_update_dict)
+        else:
+            self.perform_deanonymization(obj, update_dict)
 
         for name, related_fields in parsed_fields.related_fields.items():
             related_attribute = getattr(obj, name, None)

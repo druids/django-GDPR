@@ -1,11 +1,16 @@
+from typing import List
+
+from django.contrib.auth.models import User
 from django.test import TestCase
 
 from gdpr.anonymizers import ModelAnonymizer
-from tests.models import Account, Address, ContactForm, Customer, Email, Payment, Note
+from tests.anonymizers import ContactFormAnonymizer
+from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment
 from .data import (
-    ACCOUNT__NUMBER, ACCOUNT__OWNER, ADDRESS__CITY, ADDRESS__HOUSE_NUMBER, ADDRESS__POST_CODE, ADDRESS__STREET,
-    CUSTOMER__BIRTH_DATE, CUSTOMER__EMAIL, CUSTOMER__FB_ID, CUSTOMER__FIRST_NAME, CUSTOMER__IP, CUSTOMER__KWARGS,
-    CUSTOMER__LAST_NAME, CUSTOMER__PERSONAL_ID, CUSTOMER__PHONE_NUMBER, PAYMENT__VALUE, ACCOUNT__IBAN, ACCOUNT__SWIFT)
+    ACCOUNT__IBAN, ACCOUNT__NUMBER, ACCOUNT__OWNER, ACCOUNT__SWIFT, ADDRESS__CITY, ADDRESS__HOUSE_NUMBER,
+    ADDRESS__POST_CODE, ADDRESS__STREET, CUSTOMER__BIRTH_DATE, CUSTOMER__EMAIL, CUSTOMER__EMAIL2, CUSTOMER__EMAIL3,
+    CUSTOMER__FB_ID, CUSTOMER__FIRST_NAME, CUSTOMER__IP, CUSTOMER__KWARGS, CUSTOMER__LAST_NAME, CUSTOMER__PERSONAL_ID,
+    CUSTOMER__PHONE_NUMBER, PAYMENT__VALUE)
 from .utils import AnonymizedDataMixin, NotImplementedMixin
 
 
@@ -205,10 +210,10 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
     def test_irreversible_deanonymization(self):
         contact_form: ContactForm = ContactForm(email=CUSTOMER__EMAIL, full_name=CUSTOMER__LAST_NAME)
         contact_form.save()
-        contact_form._anonymize_obj(fields=('__ALL__'))
+        contact_form._anonymize_obj(fields=('__ALL__',))
 
         self.assertRaises(ModelAnonymizer.IrreversibleAnonymizerException, contact_form._deanonymize_obj,
-                          fields=('__ALL__'))
+                          fields=('__ALL__',))
 
     def test_generic_relation_anonymizer(self):
         contact_form: ContactForm = ContactForm(email=CUSTOMER__EMAIL, full_name=CUSTOMER__LAST_NAME)
@@ -225,3 +230,63 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         self.assertAnonymizedDataExists(anon_contact_form, 'email')
         self.assertNotEqual(anon_contact_form.full_name, CUSTOMER__LAST_NAME)
         self.assertAnonymizedDataExists(anon_contact_form, 'full_name')
+
+    def test_reversion_anonymization(self):
+        import reversion
+        from reversion.models import Version
+
+        anon = ContactFormAnonymizer()
+        anon.Meta.anonymize_reversion = True
+        anon.Meta.reversible_anonymization = True
+
+        user = User(username="test_username")
+        user.save()
+
+        with reversion.create_revision():
+            form = ContactForm()
+            form.email = CUSTOMER__EMAIL
+            form.full_name = CUSTOMER__LAST_NAME
+            form.save()
+
+            reversion.set_user(user)
+
+        with reversion.create_revision():
+            form.email = CUSTOMER__EMAIL2
+            form.save()
+
+            reversion.set_user(user)
+
+        with reversion.create_revision():
+            form.email = CUSTOMER__EMAIL3
+            form.save()
+
+            reversion.set_user(user)
+
+        versions: List[Version] = Version.objects.get_for_object(form).order_by("id")
+
+        self.assertEqual(versions[0].field_dict["email"], CUSTOMER__EMAIL)
+        self.assertEqual(versions[1].field_dict["email"], CUSTOMER__EMAIL2)
+        self.assertEqual(versions[2].field_dict["email"], CUSTOMER__EMAIL3)
+
+        anon.anonymize_obj(form, base_encryption_key=self.base_encryption_key)
+
+        anon_versions: List[Version] = Version.objects.get_for_object(form).order_by("id")
+        anon_form = ContactForm.objects.get(pk=form.pk)
+
+        self.assertNotEqual(anon_versions[0].field_dict["email"], CUSTOMER__EMAIL)
+        self.assertNotEqual(anon_versions[1].field_dict["email"], CUSTOMER__EMAIL2)
+        self.assertNotEqual(anon_versions[2].field_dict["email"], CUSTOMER__EMAIL3)
+        self.assertNotEqual(anon_form.email, CUSTOMER__EMAIL3)
+
+        anon.deanonymize_obj(anon_form, base_encryption_key=self.base_encryption_key)
+
+        deanon_versions: List[Version] = Version.objects.get_for_object(form).order_by("id")
+        deanon_form = ContactForm.objects.get(pk=form.pk)
+
+        self.assertEqual(deanon_versions[0].field_dict["email"], CUSTOMER__EMAIL)
+        self.assertEqual(deanon_versions[1].field_dict["email"], CUSTOMER__EMAIL2)
+        self.assertEqual(deanon_versions[2].field_dict["email"], CUSTOMER__EMAIL3)
+        self.assertEqual(deanon_form.email, CUSTOMER__EMAIL3)
+        self.assertDictEqual(versions[0].field_dict, deanon_versions[0].field_dict)
+        self.assertDictEqual(versions[1].field_dict, deanon_versions[1].field_dict)
+        self.assertDictEqual(versions[2].field_dict, deanon_versions[2].field_dict)

@@ -1,5 +1,5 @@
 from gdpr import anonymizers
-from tests.models import Account, Address, ContactForm, Customer, Email, Payment, Note
+from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment
 
 
 class CustomerAnonymizer(anonymizers.ModelAnonymizer):
@@ -57,7 +57,7 @@ class PaymentAnonymizer(anonymizers.ModelAnonymizer):
 
 class ContactFormAnonymizer(anonymizers.ModelAnonymizer):
     email = anonymizers.EmailFieldAnonymizer()
-    full_name = anonymizers.NameFieldAnonymizer()
+    full_name = anonymizers.CharFieldAnonymizer()
 
     class Meta:
         model = ContactForm

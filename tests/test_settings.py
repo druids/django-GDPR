@@ -7,6 +7,11 @@ INSTALLED_APPS = [
     "gdpr",
     "tests",
     "django_extensions",
+
+    "reversion",
+    # Requirements for django-reversion below
+    "django.contrib.auth",
+    "django.contrib.admin",
 ]
 
 DATABASES = {
