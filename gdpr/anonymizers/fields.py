@@ -9,7 +9,8 @@ from django.core.exceptions import ImproperlyConfigured
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
 from gdpr.encryption import (
     NUMBERS, decrypt_email, decrypt_message, encrypt_email, encrypt_message, numerize_key, translate_message,
-    translate_IBAN)
+    translate_IBAN
+)
 from gdpr.ipcypher import decrypt_ip, encrypt_ip
 
 

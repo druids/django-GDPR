@@ -1,5 +1,3 @@
-from itertools import repeat, cycle
-
 from django.utils.translation import gettext as _
 
 __all__ = ["encrypt_message", "decrypt_message", "encrypt_email", "decrypt_email", "numerize_key"]

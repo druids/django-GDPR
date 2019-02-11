@@ -1,4 +1,4 @@
-from typing import Any, Iterable, List, Optional, TYPE_CHECKING, Union
+from typing import Any, Iterable, List, Optional, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model

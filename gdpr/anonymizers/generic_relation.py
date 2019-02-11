@@ -1,6 +1,6 @@
 from typing import Optional
 
-from django.apps import AppConfig, apps
+from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 
