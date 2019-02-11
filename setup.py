@@ -1,6 +1,6 @@
+from gdpr.version import get_version
 from setuptools import find_packages, setup
 
-from gdpr.version import get_version
 
 setup(
     name='django-GDPR',

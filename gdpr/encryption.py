@@ -1,5 +1,6 @@
 from django.utils.translation import gettext as _
 
+
 __all__ = ["encrypt_message", "decrypt_message", "encrypt_email", "decrypt_email", "numerize_key"]
 
 # Vigenere like Cipher (Polyalphabetic Substitution Cipher)

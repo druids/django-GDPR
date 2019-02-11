@@ -1,7 +1,6 @@
 from datetime import datetime
-from typing import Iterable, Optional, TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Iterable, Optional, Type
 
-from chamber.models import SmartModel
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction
@@ -9,7 +8,10 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
+from chamber.models import SmartModel
+
 from .loading import purpose_register
+
 
 if TYPE_CHECKING:
     from gdpr.purposes.default import AbstractPurpose

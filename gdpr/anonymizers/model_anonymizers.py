@@ -3,7 +3,10 @@ import random
 import string
 import warnings
 from typing import (
-    Any, Dict, ItemsView, Iterator, KeysView, List, Optional, TYPE_CHECKING, Tuple, Type, Union, ValuesView)
+    TYPE_CHECKING, Any, Dict, ItemsView, Iterator, KeysView, List, Optional, Tuple, Type, Union, ValuesView
+)
+
+from reversion.revisions import _get_options
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -11,11 +14,11 @@ from django.core import serializers
 from django.db import transaction
 from django.db.models import Model, QuerySet
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor, ReverseManyToOneDescriptor
-from reversion.revisions import _get_options
 
 from gdpr.anonymizers.base import FieldAnonymizer, ModelAnonymizerMeta, RelationAnonymizer
 from gdpr.fields import Fields
 from gdpr.models import AnonymizedData, LegalReason
+
 
 if TYPE_CHECKING:
     from gdpr.purposes.default import AbstractPurpose

@@ -3,9 +3,10 @@ import os
 import re
 from os.path import basename
 
-from chamber.utils import remove_accent
 from django.conf import settings
 from django.core.files.base import ContentFile
+
+from chamber.utils import remove_accent
 
 from gdpr.anonymizers.base import FieldAnonymizer
 

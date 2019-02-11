@@ -2,7 +2,9 @@
 import logging
 
 from django.core.exceptions import ImproperlyConfigured
+
 from gdpr.anonymizers.base import NumericFieldAnonymizer
+
 
 logger = logging.getLogger(__name__)
 

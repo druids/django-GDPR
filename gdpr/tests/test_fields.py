@@ -5,8 +5,9 @@ from django.test import TestCase
 from django.utils import timezone
 
 from gdpr.anonymizers import (
-    CharFieldAnonymizer, EmailFieldAnonymizer, DateFieldAnonymizer, DecimalFieldAnonymizer,
-    IPAddressFieldAnonymizer, CzechAccountNumberFieldAnonymizer, StaticValueAnonymizer)
+    CharFieldAnonymizer, CzechAccountNumberFieldAnonymizer, DateFieldAnonymizer, DecimalFieldAnonymizer,
+    EmailFieldAnonymizer, IPAddressFieldAnonymizer, StaticValueAnonymizer
+)
 from gdpr.anonymizers.fields import FunctionFieldAnonymizer, JSONFieldAnonymizer
 
 

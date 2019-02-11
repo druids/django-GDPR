@@ -1,6 +1,7 @@
 from django.test import TestCase
 
-from gdpr.ipcypher import derive_key, encrypt_ipv4, decrypt_ipv4, decrypt_ipv6, encrypt_ipv6, encrypt_ip, decrypt_ip
+from gdpr.ipcypher import decrypt_ip, decrypt_ipv4, decrypt_ipv6, derive_key, encrypt_ip, encrypt_ipv4, encrypt_ipv6
+
 
 KEY_EMPTY_CLEAR = ''
 KEY_EMPTY = bytearray.fromhex('bb8dcd7be9a6f43b3304c640d7d7103c')

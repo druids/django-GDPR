@@ -1,9 +1,9 @@
-from django.test import TestCase
 from faker import Faker
 
-from gdpr.encryption import (
-    encrypt_message, decrypt_message, encrypt_email,
-    decrypt_email, translate_IBAN)
+from django.test import TestCase
+
+from gdpr.encryption import decrypt_email, decrypt_message, encrypt_email, encrypt_message, translate_IBAN
+
 
 IBANS = [
     'AL47 2121 1009 0000 0002 3569 8741',

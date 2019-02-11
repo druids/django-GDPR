@@ -8,11 +8,12 @@ IPv4 took from https://github.com/veorq/ipcrypt/blob/939549e3f542c7ae9eb1aec9616
 
 # type: ignore
 # flake8: noqa
-from ipaddress import ip_address, IPv4Address, IPv6Address
 from hashlib import pbkdf2_hmac
+from ipaddress import IPv4Address, IPv6Address, ip_address
 from typing import Union
 
 from pyaes import AESModeOfOperationECB
+
 
 __all__ = ['derive_key', 'encrypt_ipv4', 'decrypt_ipv4', 'encrypt_ipv6', 'decrypt_ipv6', 'encrypt_ip', 'decrypt_ip']
 

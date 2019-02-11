@@ -1,10 +1,11 @@
-from typing import Any, Dict, KeysView, List, Optional, TYPE_CHECKING, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, KeysView, List, Optional, Tuple, Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model, Q
 
 from gdpr.fields import Fields
 from gdpr.loading import anonymizer_register, purpose_register
+
 
 if TYPE_CHECKING:
     from gdpr.models import LegalReason

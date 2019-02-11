@@ -1,8 +1,9 @@
-from typing import Any, Dict, List, TYPE_CHECKING, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, Union
 
 from django.db.models import Model
 
 from gdpr.loading import anonymizer_register
+
 
 FieldMatrix = Union[str, Tuple[Any, ...]]
 FieldList = Union[List[str], str]
