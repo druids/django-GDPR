@@ -1,18 +1,18 @@
 from django.utils.translation import gettext as _
 
 
-__all__ = ["encrypt_message", "decrypt_message", "encrypt_email", "decrypt_email", "numerize_key"]
+__all__ = ['encrypt_message', 'decrypt_message', 'encrypt_email', 'decrypt_email', 'numerize_key']
 
 # Vigenere like Cipher (Polyalphabetic Substitution Cipher)
 
 # Translators: Add special characters of your language at the end
-NUMBERS = "1234567890"
-LETTERS_ONLY = "abcdefghijklmnopqrstuvwxyz"
+NUMBERS = '1234567890'
+LETTERS_ONLY = 'abcdefghijklmnopqrstuvwxyz'
 LETTERS_UPPER = LETTERS_ONLY.upper()
-SYMBOLS = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
-LETTERS = _(" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~")
+SYMBOLS = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+LETTERS = _(' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~')
 # https://en.wikipedia.org/wiki/Email_address#Local-part
-EMAIL_LOCAL_LETTERS = "!#$%&'*+-/0123456789=?ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz{|}~"
+EMAIL_LOCAL_LETTERS = '!#$%&\'*+-/0123456789=?ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz{|}~'
 DOMAIN_LETTERS = LETTERS_ONLY + NUMBERS  # RFC952 + RFC1123
 
 
@@ -48,8 +48,8 @@ def decrypt_message(key: str, message: str, letters: str = LETTERS) -> str:
 def translate_email(key: str, email: str, encrypt: bool = True):
     local, domain_tld = email.split("@")
     domain, tld = domain_tld.split(".")
-    return (f"{translate_message(key, local, encrypt, EMAIL_LOCAL_LETTERS)}@"
-            f"{translate_message(key, domain, encrypt, DOMAIN_LETTERS)}.{tld}")
+    return (f'{translate_message(key, local, encrypt, EMAIL_LOCAL_LETTERS)}@'
+            f'{translate_message(key, domain, encrypt, DOMAIN_LETTERS)}.{tld}')
 
 
 def encrypt_email(key: str, email: str):

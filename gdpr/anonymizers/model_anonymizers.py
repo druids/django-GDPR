@@ -72,8 +72,8 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     def _get_encryption_key(self, obj, field_name: str):
         """Hash encryption key from `get_encryption_key` and append settings.SECRET_KEY."""
         return hashlib.sha256(
-            f"{obj.pk}::{self.get_encryption_key(obj)}::{settings.SECRET_KEY}::{field_name}".encode(
-                "utf-8")).hexdigest()
+            f'{obj.pk}::{self.get_encryption_key(obj)}::{settings.SECRET_KEY}::{field_name}'.encode(
+                'utf-8')).hexdigest()
 
     def is_reversible(self, obj) -> bool:
         if hasattr(self.Meta, "reversible_anonymization"):  # type: ignore
@@ -91,9 +91,9 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
         if self._base_encryption_key:
             return self._base_encryption_key
         raise NotImplementedError(
-            f"The anonymizer '{self.__class__.__name__}' does not have `get_encryption_key` method defined or "
-            "`base_encryption_key` supplied during anonymization or "
-            "reversible_anonymization set to False.")
+            f'The anonymizer \'{self.__class__.__name__}\' does not have `get_encryption_key` method defined or '
+            '`base_encryption_key` supplied during anonymization or '
+            'reversible_anonymization set to False.')
 
     def set_base_encryption_key(self, base_encryption_key: str):
         self._base_encryption_key = base_encryption_key

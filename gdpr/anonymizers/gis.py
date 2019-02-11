@@ -18,8 +18,9 @@ def is_gis_installed():
         return True
 
 
+
 if not is_gis_installed():
-    logger.warning("Unable to load django GIS. GIS anonymization disabled.")
+    logger.warning('Unable to load django GIS. GIS anonymization disabled.')
 
 
 class GISPointFieldAnonymizer(NumericFieldAnonymizer):

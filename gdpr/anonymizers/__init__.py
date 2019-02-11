@@ -12,10 +12,10 @@ from .legacy_fields import (
 from .model_anonymizers import DeleteModelAnonymizer, ModelAnonymizer
 
 __all__ = (
-    "ModelAnonymizer", "DeleteModelAnonymizer", "FunctionFieldAnonymizer", "DateFieldAnonymizer", "CharFieldAnonymizer",
-    "DecimalFieldAnonymizer", "IPAddressFieldAnonymizer", "CzechAccountNumberFieldAnonymizer", "StaticValueAnonymizer",
-    "MD5TextFieldAnonymizer", "EmailFieldAnonymizer", "UsernameFieldAnonymizer", "NameFieldAnonymizer",
-    "PhoneFieldAnonymizer", "PersonalIIDFieldAnonymizer", "IDCardDataFieldAnonymizer", "DummyFileAnonymizer",
-    "GISPointFieldAnonymizer", "ReverseGenericRelationAnonymizer", "SHA256TextFieldAnonymizer",
-    "HashTextFieldAnonymizer", "GenericRelationAnonymizer", "IBANFieldAnonymizer"
+    'ModelAnonymizer', 'DeleteModelAnonymizer', 'FunctionFieldAnonymizer', 'DateFieldAnonymizer', 'CharFieldAnonymizer',
+    'DecimalFieldAnonymizer', 'IPAddressFieldAnonymizer', 'CzechAccountNumberFieldAnonymizer', 'StaticValueAnonymizer',
+    'MD5TextFieldAnonymizer', 'EmailFieldAnonymizer', 'UsernameFieldAnonymizer', 'NameFieldAnonymizer',
+    'PhoneFieldAnonymizer', 'PersonalIIDFieldAnonymizer', 'IDCardDataFieldAnonymizer', 'DummyFileAnonymizer',
+    'GISPointFieldAnonymizer', 'ReverseGenericRelationAnonymizer', 'SHA256TextFieldAnonymizer',
+    'HashTextFieldAnonymizer', 'GenericRelationAnonymizer', 'IBANFieldAnonymizer'
 )
