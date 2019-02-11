@@ -5,7 +5,6 @@ from django.core.exceptions import ImproperlyConfigured
 
 from gdpr.anonymizers.base import NumericFieldAnonymizer
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -16,7 +15,6 @@ def is_gis_installed():
         return False
     else:
         return True
-
 
 
 if not is_gis_installed():

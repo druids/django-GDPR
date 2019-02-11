@@ -27,7 +27,7 @@ class Fields:
 
     def parse_local_fields(self, fields: FieldMatrix) -> FieldList:
         """Get Iterable of local fields from fields matrix."""
-        if fields == "__ALL__" or "__ALL__" in fields:
+        if fields == "__ALL__" or ("__ALL__" in fields and type(fields) != str):
             return list(self.anonymizer.keys())
 
         return [field for field in fields if type(field) == str]
