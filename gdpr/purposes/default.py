@@ -89,4 +89,11 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
         anonymizer.anonymize_obj(obj, legal_reason, self, parsed_fields)
 
 
+<<<<<<< d0be503dffd7e68610da8a1072fba15fea855592
 purposes_map = purpose_register  # Backwards compatibility
+=======
+    name = None
+    slug = None
+    fields = {}
+    expiration_timedelta = timedelta()
+>>>>>>> Remove is_retaining_data attribute from AbstractPurpose
