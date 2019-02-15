@@ -106,7 +106,7 @@ class LegalReasonQuerySet(models.QuerySet):
             days: Number of days in the past. If not provided, all Legal Reasons retaining data which expired in the
             past will be returned.
         """
-        purpose_slugs_retaining_data = [slug for slug, cls in purpose_register.items() if cls.is_retaining_data]
+        purpose_slugs_retaining_data = [slug for slug, cls in purpose_register.items() if cls.fields]
 
         filter_keys = {
             'expires_at__lt': timezone.now(),
