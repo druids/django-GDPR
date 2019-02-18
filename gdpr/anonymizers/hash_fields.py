@@ -8,7 +8,7 @@ class BaseHashTextFieldAnonymizer(FieldAnonymizer):
     algorithm: str
     is_reversible = False
 
-    def get_anonymized_value(self, value: Any):
+    def get_encrypted_value(self, value: Any, encryption_key: str):
         h = hashlib.new(self.algorithm)
         h.update(value.encode('utf-8'))
         return h.hexdigest()[:len(value)] if value else value

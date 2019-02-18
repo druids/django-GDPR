@@ -26,24 +26,24 @@ class GISPointFieldAnonymizer(NumericFieldAnonymizer):
     Anonymizer for PointField from django-gis.
     """
 
-    def get_encrypted_value(self, value):
+    def get_encrypted_value(self, value, encryption_key: str):
         if not is_gis_installed():
             raise ImproperlyConfigured('Unable to load django GIS.')
         from django.contrib.gis.geos import Point
 
         new_value: Point = Point(value.tuple)
-        new_value.x += self.get_numeric_encryption_key(int(new_value.x))
-        new_value.y += self.get_numeric_encryption_key(int(new_value.y))
+        new_value.x += self.get_numeric_encryption_key(encryption_key, int(new_value.x))
+        new_value.y += self.get_numeric_encryption_key(encryption_key, int(new_value.y))
 
         return new_value
 
-    def get_decrypted_value(self, value):
+    def get_decrypted_value(self, value, encryption_key: str):
         if not is_gis_installed():
             raise ImproperlyConfigured('Unable to load django GIS.')
         from django.contrib.gis.geos import Point
 
         new_value: Point = Point(value.tuple)
-        new_value.x -= self.get_numeric_encryption_key(int(new_value.x))
-        new_value.y -= self.get_numeric_encryption_key(int(new_value.y))
+        new_value.x -= self.get_numeric_encryption_key(encryption_key, int(new_value.x))
+        new_value.y -= self.get_numeric_encryption_key(encryption_key, int(new_value.y))
 
         return new_value

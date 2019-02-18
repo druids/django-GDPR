@@ -35,95 +35,66 @@ class FieldAnonymizer:
         """
         Args:
             ignore_empty_values: defines if empty value of a model will be ignored or should be anonymized too
-            empty_values: define list of values which are considered as empty
+            empty_values: defines list of values which are considered as empty
         """
         self._ignore_empty_values = ignore_empty_values if ignore_empty_values is not None else self.ignore_empty_values
         self._empty_values = empty_values if empty_values is not None else self.empty_values
 
-    def get_is_reversible(self, obj=None) -> bool:
+    def get_is_reversible(self, obj=None, raise_exception: bool = False) -> bool:
         """This method allows for custom implementation."""
+        if not self.is_reversible and raise_exception:
+            raise self.IrreversibleAnonymizationException
         return self.is_reversible
 
-    def get_anonymized_value_from_obj(self, obj, name: str, encryption_key: Optional[str] = None):
-        value = getattr(obj, name)
+    def _get_anonymized_value_from_value(self, value, encryption_key: str):
         if self._ignore_empty_values and value in self._empty_values:
             return value
-        self._encryption_key = encryption_key
-        return self.get_anonymized_value(value)
+        return self.get_encrypted_value(value, encryption_key)
 
-    def get_deanonymized_value_from_obj(self, obj, name: str, encryption_key: Optional[str] = None):
-        if self.get_is_reversible(obj) is False:
-            raise self.IrreversibleAnonymizationException()
-        value = getattr(obj, name)
-        if self._ignore_empty_values and value in self._empty_values:
-            return value
-        self._encryption_key = encryption_key
-        return self.get_decrypted_value(value)
+    def get_anonymized_value_from_obj(self, obj, name: str, encryption_key: str):
+        return self._get_anonymized_value_from_value(getattr(obj, name), encryption_key)
 
-    def get_anonymized_value_from_version(self, obj, version, name: str, encryption_key: Optional[str] = None):
-        value = version.field_dict[name]
-        if self._ignore_empty_values and value in self._empty_values:
-            return value
-        self._encryption_key = encryption_key
-        return self.get_anonymized_value(value)
+    def get_anonymized_value_from_version(self, obj, version, name: str, encryption_key: str):
+        return self._get_anonymized_value_from_value(version.field_dict[name], encryption_key)
 
-    def get_deanonymized_value_from_version(self, obj, version, name: str, encryption_key: Optional[str] = None):
-        if self.get_is_reversible(obj) is False:
-            raise self.IrreversibleAnonymizationException()
-        value = version.field_dict[name]
-        if self._ignore_empty_values and value in self._empty_values:
-            return value
-        self._encryption_key = encryption_key
-        return self.get_decrypted_value(value)
+    def _get_deanonymized_value_from_value(self, obj, value, encryption_key: str):
+        if self.get_is_reversible(obj, raise_exception=True):
+            if self._ignore_empty_values and value in self._empty_values:
+                return value
+            return self.get_decrypted_value(value, encryption_key)
 
-    def get_encryption_key(self):
-        """Return encryption key to use.
+    def get_deanonymized_value_from_obj(self, obj, name: str, encryption_key: str):
+        return self._get_deanonymized_value_from_value(obj, getattr(obj, name), encryption_key)
 
-        Override this method for custom logic.
-        """
-        if self._encryption_key is None:
-            raise ImproperlyConfigured()
-        return self._encryption_key
+    def get_deanonymized_value_from_version(self, obj, version, name: str, encryption_key: str):
+        return self._get_deanonymized_value_from_value(obj, version.field_dict[name], encryption_key)
 
     def get_anonymized_value(self, value: Any) -> Any:
         """
-        There must be defined implementation of rule for anonymization.
-        To retain compatibility with older anonymizers this method is used as redirect to
-        `get_encrypted_value`.
-
-        Args:
-            value: value that is anonymize
-
-        Returns:
-            anonymized value
+        Deprecated
         """
-        return self.get_encrypted_value(value)
+        raise DeprecationWarning()
 
-    def get_encrypted_value(self, value: Any) -> Any:
+    def get_encrypted_value(self, value: Any, encryption_key: str) -> Any:
         """
         There must be defined implementation of rule for anonymization
 
-        Args:
-            value: value that is anonymize
-
-        Returns:
-            anonymized value
+        :param value: value
+        :param encryption_key: The encryption key
+        :return: Encrypted value
         """
         raise NotImplementedError
 
-    def get_decrypted_value(self, value: Any) -> Any:
+    def get_decrypted_value(self, value: Any, encryption_key: str) -> Any:
         """
-        There must be defined implementation of rule for anonymization
+        There must be defined implementation of rule for deanonymization.
 
-        Args:
-            value: value that is anonymize
-
-        Returns:
-            anonymized value
+        :param value: Encrypted value
+        :param encryption_key: The encryption key
+        :return: Decrypted value
         """
-        if self.is_reversible:
+        if self.get_is_reversible(raise_exception=True):
             raise NotImplementedError
-        return self.IrreversibleAnonymizationException()
 
 
 class NumericFieldAnonymizer(FieldAnonymizer):
@@ -135,12 +106,26 @@ class NumericFieldAnonymizer(FieldAnonymizer):
             self.max_anonymization_range = max_anonymization_range
         super().__init__(ignore_empty_values, empty_values)
 
-    def get_numeric_encryption_key(self, value: Union[int, float] = None) -> int:
+    def get_numeric_encryption_key(self, encryption_key: str, value: Union[int, float] = None) -> int:
+        """
+        From `encryption_key` create it's numeric counterpart of appropriate length.
+
+        If value is supplied then the appropriate length is based on it if not the
+        parameter `self.max_anonymization_range` is used.
+
+        If the numeric_encryption_key is used the value+key may be one order bigger then the original value.
+
+        e.g. value=5, numeric_encryption_key=8 => len("13") == 2
+
+        :param encryption_key: The encryption key generated by anonymizer.
+        :param value: Value to which the result of this function will be used.
+        :return: Numeric counterpart of encryption_key
+        """
         if value is None:
-            return numerize_key(self.get_encryption_key()) % self.max_anonymization_range
+            return numerize_key(encryption_key) % self.max_anonymization_range
         # safety measure against key getting one bigger (overflow) on decrypt e.g. (5)=1 -> 5 + 8 = 13 -> (13)=2
         guess_len = len(str(int(value)))
-        return numerize_key(self.get_encryption_key()) % 10 ** (guess_len if guess_len % 2 != 0 else (guess_len - 1))
+        return numerize_key(encryption_key) % 10 ** (guess_len if guess_len % 2 != 0 else (guess_len - 1))
 
 
 class ModelAnonymizerMeta(type):
