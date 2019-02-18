@@ -1,6 +1,6 @@
 # Django-GDPR [![Build Status](https://travis-ci.org/BrnoPCmaniak/django-GDPR.svg?branch=develop)](https://travis-ci.org/BrnoPCmaniak/django-GDPR)
 
-This libarary enables you to store user's consent for data retention easily
+This library enables you to store user's consent for data retention easily
 and to anonymize/deanonymize user's data accordingly.
 
 For brief overview you can check example app in `tests` directory.
@@ -32,7 +32,7 @@ from django.db import models
 from gdpr.mixins import AnonymizationModel
 
 class Customer(AnonymizationModel):
-    # Keys for pseudoanonymization
+    # these fields will be used as basic keys for pseudoanonymization
     first_name = models.CharField(max_length=256)
     last_name = models.CharField(max_length=256)
 
@@ -54,7 +54,7 @@ from dateutil.relativedelta import relativedelta
 from gdpr.purposes.default import AbstractPurpose
 
 GENERAL_PURPOSE_SLUG = "general"
-FIRST_N_LAST_NAME_SLUG = "first_n_last"
+FIRST_AND_LAST_NAME_SLUG = "first_and_last"
 
 class GeneralPurpose(AbstractPurpose):
     name = "Retain user data for 2 years"
@@ -62,15 +62,15 @@ class GeneralPurpose(AbstractPurpose):
     expiration_timedelta = relativedelta(years=2)
     fields = "__ALL__"  # Anonymize all fields defined in anonymizer
 
-class FirstNLastNamePurpose(AbstractPurpose):
+class FirstAndLastNamePurpose(AbstractPurpose):
     """Store First & Last name for 10 years."""
     name = "retain due to internet archive"
-    slug = FIRST_N_LAST_NAME_SLUG
+    slug = FIRST_AND_LAST_NAME_SLUG
     expiration_timedelta = relativedelta(years=10)
     fields = ("first_name", "last_name")
 ```
 
-The fields `fields` specify to which fields this consent applies to.
+The field `fields` specify to which fields this consent applies to.
 
 Some more examples:
 ```python
@@ -101,8 +101,8 @@ fields = (
 
 ```
 
-Now when we have purpose created we also have to make a *anonymizer* so the library knows which fields and how to
-anonymize this is fairly simple and is really similar to Django forms.
+Now when we have the purpose(s) created we also have to make an _anonymizer_ so the library knows which fields to
+anonymize and how. This is fairly simple and is quite similar to Django forms.
 
 ```python
 # app/anonymizers.py
@@ -128,34 +128,45 @@ class CustomerAnonymizer(anonymizers.ModelAnonymizer):
 
 Now you can fully leverage the system:
 
-You can create new consent:
+You can create/revoke consent:
 ```python
 from gdpr.models import LegalReason
 
 from tests.models import Customer
-from tests.purposes import FIRST_N_LAST_NAME_SLUG
+from tests.purposes import FIRST_AND_LAST_NAME_SLUG
+
 
 customer = Customer(first_name="John", last_name="Smith")
 customer.save()
 
-LegalReason.objects.create_consent(FIRST_N_LAST_NAME_SLUG, customer)
+# Create consent
+LegalReason.objects.create_consent(FIRST_AND_LAST_NAME_SLUG, customer)
+
+# And now you can revoke it
+LegalReason.objects.expire_consent(FIRST_AND_LAST_NAME_SLUG, customer)
 ```
 
-And you can revoke it if needed:
+In case your model uses the `AnonymizationModelMixin` or `AnonymizationModel` you can create and revoke consents even
+easier.
 ```python
-from gdpr.models import LegalReason
-
 from tests.models import Customer
-from tests.purposes import FIRST_N_LAST_NAME_SLUG
-
-customer = Customer.objects.get(first_name="John", last_name="Smith")
+from tests.purposes import FIRST_AND_LAST_NAME_SLUG
 
 
-LegalReason.objects.expire_consent(FIRST_N_LAST_NAME_SLUG, customer)
+customer = Customer(first_name="John", last_name="Smith")
+customer.save()
+
+# Create consent
+customer.create_consent(FIRST_AND_LAST_NAME_SLUG)
+
+# And now you can revoke it
+customer.expire_consent(FIRST_AND_LAST_NAME_SLUG)
 ```
 
-Once in some optimal amount of time (a day) you should invoke
-following command to revoke all expired consents.
+
+Expired consents are revoked by running the following command. You should invoke it repeatedly, for example by cron.
+The invocation interval depends on your circumstances - how fast you want to expire consents after their revocation,
+the amount of consents to expire in the interval, server load, and last but not least, legal requirements.
 
 ```python
 from gdpr.models import LegalReason
@@ -165,16 +176,16 @@ LegalReason.objects.expire_old_consents()
 
 ## FieldAnonymizers
 
-* `FunctionAnonymizer` - in situ anonymization method (`secret_code = anonymizers.FunctionFieldAnonymizer(lambda x: x**2)`)
-* `PlaceHolderAnonymizer` - placeholder
+* `FunctionAnonymizer` - in place lambda/function anonymization method (e.g. `secret_code = anonymizers.FunctionFieldAnonymizer(lambda x: x**2)`)
 * `DateFieldAnonymizer`
 * `CharFieldAnonymizer`
 * `DecimalFieldAnonymizer`
 * `IPAddressFieldAnonymizer`
 * `CzechAccountNumberFieldAnonymizer` - for czech bank account numbers
+* `IBANFieldAnonymizer`
 * `JSONFieldAnonymizer`
 * `EmailFieldAnonymizer`
 * `MD5TextFieldAnonymizer`
 * `SHA256TextFieldAnonymizer`
-* `HashTextFieldAnonymizer` - anonymization with given hash algorithm (`secret_code = anonymizers.HashTextFieldAnonymizer('sha512')`)
-* `StaticValueAnonymizer` - for anonymization replace with static value (`secret_code = anonymizers.StaticValueAnonymizer(42)`)
+* `HashTextFieldAnonymizer` - anonymization using given hash algorithm (e.g. `secret_code = anonymizers.HashTextFieldAnonymizer('sha512')`)
+* `StaticValueAnonymizer` - anonymization by replacing with static value (e.g. `secret_code = anonymizers.StaticValueAnonymizer(42)`)

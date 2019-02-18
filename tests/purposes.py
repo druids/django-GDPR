@@ -3,11 +3,11 @@ from dateutil.relativedelta import relativedelta
 from gdpr.purposes.default import AbstractPurpose
 
 # SLUG can be any length up to 100 characters
-FIRST_N_LAST_NAME_SLUG = "FNL"
+FIRST_AND_LAST_NAME_SLUG = "FNL"
 EMAIL_SLUG = "EML"
 PAYMENT_VALUE_SLUG = "PVL"
 ACCOUNT_SLUG = "ACC"
-ACCOUNT_N_PAYMENT_SLUG = "ACP"
+ACCOUNT_AND_PAYMENT_SLUG = "ACP"
 ADDRESS_SLUG = "ADD"
 CONTACT_FORM_SLUG = "CTF"
 EVERYTHING_SLUG = "EVR"
@@ -16,7 +16,7 @@ EVERYTHING_SLUG = "EVR"
 class FirstNLastNamePurpose(AbstractPurpose):
     """Store First & Last name for 10 years."""
     name = "retain due to internet archive"
-    slug = FIRST_N_LAST_NAME_SLUG
+    slug = FIRST_AND_LAST_NAME_SLUG
     expiration_timedelta = relativedelta(years=10)
     fields = ("first_name", "last_name")
 
@@ -60,7 +60,7 @@ class AccountPurpose(AbstractPurpose):
 
 class AccountsAndPaymentsPurpose(AbstractPurpose):
     name = "retain due to Gandalf"
-    slug = ACCOUNT_N_PAYMENT_SLUG
+    slug = ACCOUNT_AND_PAYMENT_SLUG
     expiration_timedelta = relativedelta(years=3)
     fields = (
         ("accounts", (

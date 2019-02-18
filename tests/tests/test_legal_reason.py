@@ -5,7 +5,7 @@ from faker import Faker
 from gdpr.models import LegalReason
 from tests.models import Account, Customer, Email, Payment
 from tests.purposes import (
-    ACCOUNT_N_PAYMENT_SLUG, ACCOUNT_SLUG, EMAIL_SLUG, EVERYTHING_SLUG, EmailsPurpose, FIRST_N_LAST_NAME_SLUG)
+    ACCOUNT_AND_PAYMENT_SLUG, ACCOUNT_SLUG, EMAIL_SLUG, EVERYTHING_SLUG, EmailsPurpose, FIRST_AND_LAST_NAME_SLUG)
 from tests.tests.data import (
     ACCOUNT__NUMBER, ACCOUNT__NUMBER2, ACCOUNT__OWNER, ACCOUNT__OWNER2, CUSTOMER__BIRTH_DATE, CUSTOMER__EMAIL,
     CUSTOMER__EMAIL2, CUSTOMER__EMAIL3, CUSTOMER__FB_ID, CUSTOMER__FIRST_NAME, CUSTOMER__IP, CUSTOMER__KWARGS,
@@ -23,14 +23,14 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
         cls.customer.save()
 
     def test_create_legal_reson_from_slug(self):
-        LegalReason.objects.create_consent(FIRST_N_LAST_NAME_SLUG, self.customer).save()
+        LegalReason.objects.create_consent(FIRST_AND_LAST_NAME_SLUG, self.customer).save()
 
         self.assertTrue(LegalReason.objects.filter(
-            purpose_slug=FIRST_N_LAST_NAME_SLUG, source_object_id=self.customer.pk,
+            purpose_slug=FIRST_AND_LAST_NAME_SLUG, source_object_id=self.customer.pk,
             source_object_content_type=ContentType.objects.get_for_model(Customer)).exists())
 
     def test_expirement_legal_reason(self):
-        legal = LegalReason.objects.create_consent(FIRST_N_LAST_NAME_SLUG, self.customer)
+        legal = LegalReason.objects.create_consent(FIRST_AND_LAST_NAME_SLUG, self.customer)
         legal.expire()
 
         anon_customer = Customer.objects.get(pk=self.customer.pk)
@@ -44,7 +44,7 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
         self.assertAnonymizedDataNotExists(anon_customer, "primary_email_address")
 
     def test_renew_legal_reason(self):
-        legal = LegalReason.objects.create_consent(FIRST_N_LAST_NAME_SLUG, self.customer)
+        legal = LegalReason.objects.create_consent(FIRST_AND_LAST_NAME_SLUG, self.customer)
         legal.expire()
         legal.renew()
 
@@ -153,7 +153,7 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
                                      value=self.fake.pydecimal(left_digits=8, right_digits=2, positive=True))
         payment_4.save()
 
-        legal = LegalReason.objects.create_consent(ACCOUNT_N_PAYMENT_SLUG, self.customer)
+        legal = LegalReason.objects.create_consent(ACCOUNT_AND_PAYMENT_SLUG, self.customer)
         legal.expire()
 
         anon_account_1: Account = Account.objects.get(pk=account_1.pk)
@@ -198,7 +198,7 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
                                      value=self.fake.pydecimal(left_digits=8, right_digits=2, positive=True))
         payment_4.save()
 
-        legal = LegalReason.objects.create_consent(ACCOUNT_N_PAYMENT_SLUG, self.customer)
+        legal = LegalReason.objects.create_consent(ACCOUNT_AND_PAYMENT_SLUG, self.customer)
         legal.expire()
 
         anon_legal = LegalReason.objects.get(pk=legal.pk)
@@ -268,7 +268,7 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
                                    value=self.fake.pydecimal(left_digits=8, right_digits=2, positive=True))
         payment.save()
 
-        LegalReason.objects.create_consent(FIRST_N_LAST_NAME_SLUG, self.customer)
+        LegalReason.objects.create_consent(FIRST_AND_LAST_NAME_SLUG, self.customer)
         LegalReason.objects.create_consent(EMAIL_SLUG, self.customer)
         LegalReason.objects.create_consent(ACCOUNT_SLUG, self.customer)
         legal = LegalReason.objects.create_consent(EVERYTHING_SLUG, self.customer)
