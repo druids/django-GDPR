@@ -188,7 +188,6 @@ class LegalReason(SmartModel):
     def expire(self):
         """Set `expires_at` to now and call `expirement`."""
         self.expires_at = timezone.now()
-        self.save()
         self._expirement()
 
     def renew(self):
