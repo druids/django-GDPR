@@ -1,3 +1,5 @@
+import warnings
+
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model, QuerySet
@@ -42,12 +44,14 @@ class AnonymizationModelMixin:
         super().delete(using, keep_parents)
         try:
             AnonymizedData.objects.filter(object_id=obj_id, content_type=self.content_type).delete()
-        except Error:
-            pass  # Better to just have some leftovers then to fail
+        except Error as e:
+            # Better to just have some leftovers then to fail
+            warnings.warn(f'An exception {str(e)} occurred during cleanup of {str(self)}')
         try:
             LegalReasonRelatedObject.objects.filter(object_id=obj_id, object_content_type=self.content_type).delete()
-        except Error:
-            pass  # Better to just have some leftovers then to fail
+        except Error as e:
+            # Better to just have some leftovers then to fail
+            warnings.warn(f'An exception {str(e)} occurred during cleanup of {str(self)}')
 
 
 class AnonymizationModel(AnonymizationModelMixin, Model):
