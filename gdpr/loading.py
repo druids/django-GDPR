@@ -86,7 +86,7 @@ V = TypeVar('V')
 class BaseRegister(Generic[K, V]):
     """Base class for all registers."""
 
-    _has_import_happen = False
+    _has_import_happened = False
     register_dict: "OrderedDict[K, V]"
     loaders_settings: str
     default_loader: Optional[str]
@@ -107,9 +107,9 @@ class BaseRegister(Generic[K, V]):
                 str_to_class(loader_path)().import_modules()
 
     def _import_objects_once(self) -> None:
-        if self._has_import_happen:
+        if self._has_import_happened:
             return
-        self._has_import_happen = True
+        self._has_import_happened = True
         self._import_objects()
 
     def __iter__(self) -> Iterator[V]:
