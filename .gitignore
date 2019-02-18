@@ -117,3 +117,9 @@ dmypy.json
 .idea
 
 *.sqlite3
+
+.DS_Store
+*.swp
+*.tmp
+*.pyc
+*~
