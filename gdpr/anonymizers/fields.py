@@ -208,35 +208,30 @@ class JSONFieldAnonymizer(FieldAnonymizer):
                              anonymize: bool = True) -> Union[list, dict, bool, None, str, int, float]:
         if value is None:
             return None
-        if type(value) is str:
+        elif type(value) is str:
             return translate_message(encryption_key, value, anonymize)  # type: ignore
-        if type(value) is int:
+        elif type(value) is int:
             return value + self.get_numeric_encryption_key(encryption_key, value) * (  # type: ignore
                 1 if anonymize else -1)
-        if type(value) is float:
+        elif type(value) is float:
             # 9.14 - 3.14 -> 3.1400000000000006 - (To avoid this we are using Decimal)
             return float(
                 Decimal(str(value)) + self.get_numeric_encryption_key(encryption_key, value) * (  # type: ignore
                     1 if anonymize else -1))
-        if type(value) in [dict, list]:
-            return self.anonymize_json(value, encryption_key, anonymize)  # type: ignore
-        if type(value) is bool and self.get_numeric_encryption_key(encryption_key) % 2 == 0:
+        elif type(value) is dict:
+            return {key: self.anonymize_json_value(item, encryption_key, anonymize) for key, item in
+                    value.items()}  # type: ignore
+        elif type(value) is list:
+            return [self.anonymize_json_value(item, encryption_key, anonymize) for item in value]  # type: ignore
+        elif type(value) is bool and self.get_numeric_encryption_key(encryption_key) % 2 == 0:
             return not value
         return value
 
-    def anonymize_json(self, json: Union[list, dict], encryption_key: str, anonymize: bool = True) -> Union[list, dict]:
-        if type(json) == dict:
-            return {key: self.anonymize_json_value(value, encryption_key, anonymize) for key, value in
-                    json.items()}  # type: ignore
-        elif type(json) == list:
-            return [self.anonymize_json_value(value, encryption_key, anonymize) for value in json]
-        raise ValueError
-
     def get_encrypted_value(self, value, encryption_key: str):
-        return self.anonymize_json(value, encryption_key)
+        return self.anonymize_json_value(value, encryption_key)
 
     def get_decrypted_value(self, value, encryption_key: str):
-        return self.anonymize_json(value, encryption_key, anonymize=False)
+        return self.anonymize_json_value(value, encryption_key, anonymize=False)
 
 
 class StaticValueAnonymizer(FieldAnonymizer):
