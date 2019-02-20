@@ -5,15 +5,19 @@ python:
   - "3.6"
   - "3.7"
 env:
-  - DJANGO_VERSION=1.10.8
-  - DJANGO_VERSION=1.11.18
-  - DJANGO_VERSION=2.0.10
-  - DJANGO_VERSION=2.1.5
+  - DJANGO_VERSION=1.10.8 REVERSION=https://github.com/druids/django-reversion/tarball/2.0.14#egg=django-reversion-2.0.14
+  - DJANGO_VERSION=1.10.8 REVERSION=
+  - DJANGO_VERSION=1.11.18 REVERSION='django-reversion==3.0.3'
+  - DJANGO_VERSION=2.0.10 REVERSION='django-reversion==3.0.3'
+  - DJANGO_VERSION=2.1.5 REVERSION='django-reversion==3.0.3'
 # command to install dependencies
 install:
+  - sed -i '/django==/d' ./test_requirements.txt
+  - sed -i '/django-reversion/d' ./test_requirements.txt
   - pip install -q -r test_requirements.txt
-  - pip install -q Django==$DJANGO_VERSION
+  - pip install -q Django==$DJANGO_VERSION $REVERSION
   - python setup.py -q install
+  - pip freeze
 # command to run tests
 script:
     - python runtests.py

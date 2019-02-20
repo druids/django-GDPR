@@ -1,9 +1,11 @@
 from typing import List
+from unittest import skipIf
 
 from django.contrib.auth.models import User
 from django.test import TestCase
 
 from gdpr.anonymizers import ModelAnonymizer
+from gdpr.utils import is_reversion_installed
 from tests.anonymizers import ContactFormAnonymizer
 from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment
 from .data import (
@@ -231,9 +233,11 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         self.assertNotEqual(anon_contact_form.full_name, CUSTOMER__LAST_NAME)
         self.assertAnonymizedDataExists(anon_contact_form, 'full_name')
 
+    @skipIf(not is_reversion_installed(), 'Django-reversion is not installed.')
     def test_reversion_anonymization(self):
-        import reversion
+        from reversion import revisions as reversion
         from reversion.models import Version
+        from gdpr.utils import get_reversion_versions
 
         anon = ContactFormAnonymizer()
         anon.Meta.anonymize_reversion = True
@@ -262,7 +266,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
             reversion.set_user(user)
 
-        versions: List[Version] = Version.objects.get_for_object(form).order_by("id")
+        versions: List[Version] = get_reversion_versions(form)
 
         self.assertEqual(versions[0].field_dict["email"], CUSTOMER__EMAIL)
         self.assertEqual(versions[1].field_dict["email"], CUSTOMER__EMAIL2)
@@ -270,7 +274,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         anon.anonymize_obj(form, base_encryption_key=self.base_encryption_key)
 
-        anon_versions: List[Version] = Version.objects.get_for_object(form).order_by("id")
+        anon_versions: List[Version] = get_reversion_versions(form)
         anon_form = ContactForm.objects.get(pk=form.pk)
 
         self.assertNotEqual(anon_versions[0].field_dict["email"], CUSTOMER__EMAIL)
@@ -280,7 +284,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         anon.deanonymize_obj(anon_form, base_encryption_key=self.base_encryption_key)
 
-        deanon_versions: List[Version] = Version.objects.get_for_object(form).order_by("id")
+        deanon_versions: List[Version] = get_reversion_versions(form)
         deanon_form = ContactForm.objects.get(pk=form.pk)
 
         self.assertEqual(deanon_versions[0].field_dict["email"], CUSTOMER__EMAIL)

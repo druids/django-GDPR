@@ -11,10 +11,9 @@ logger = logging.getLogger(__name__)
 def is_gis_installed():
     try:
         from django.contrib.gis.geos import Point
+        return True
     except ImproperlyConfigured:
         return False
-    else:
-        return True
 
 
 if not is_gis_installed():

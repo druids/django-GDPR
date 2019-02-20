@@ -8,15 +8,14 @@ Customer
     - Payment
 
 """
-import reversion
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 from gdpr.mixins import AnonymizationModel
+from gdpr.utils import is_reversion_installed
 
 
-@reversion.register()
 class Customer(AnonymizationModel):
     # Keys for pseudoanonymization
     first_name = models.CharField(max_length=256)
@@ -42,14 +41,12 @@ class Customer(AnonymizationModel):
         return f"{self.first_name} {self.last_name}"
 
 
-@reversion.register()
 class Email(AnonymizationModel):
     """Example on anonymization on related field."""
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="emails")
     email = models.EmailField(blank=True, null=True)
 
 
-@reversion.register()
 class Address(AnonymizationModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="addresses")
     street = models.CharField(max_length=256, blank=True, null=True)
@@ -58,7 +55,6 @@ class Address(AnonymizationModel):
     post_code = models.CharField(max_length=6, blank=True, null=True)
 
 
-@reversion.register()
 class Account(AnonymizationModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="accounts")
     number = models.CharField(max_length=256, blank=True, null=True)
@@ -67,7 +63,6 @@ class Account(AnonymizationModel):
     owner = models.CharField(max_length=256, blank=True, null=True)
 
 
-@reversion.register()
 class Payment(AnonymizationModel):
     """Down the rabbit hole multilevel relations."""
     account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="payments")
@@ -75,15 +70,25 @@ class Payment(AnonymizationModel):
     date = models.DateField(auto_now_add=True)
 
 
-@reversion.register()
 class ContactForm(AnonymizationModel):
     email = models.EmailField()
     full_name = models.CharField(max_length=256)
 
 
-@reversion.register()
 class Note(AnonymizationModel):
     note = models.TextField()
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
+
+
+if is_reversion_installed():
+    from reversion import revisions as reversion
+
+    reversion.register(Customer)
+    reversion.register(Email)
+    reversion.register(Address)
+    reversion.register(Account)
+    reversion.register(Payment)
+    reversion.register(ContactForm)
+    reversion.register(Note)

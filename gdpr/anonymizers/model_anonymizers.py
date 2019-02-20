@@ -6,8 +6,6 @@ from typing import (
     TYPE_CHECKING, Any, Dict, ItemsView, Iterator, KeysView, List, Optional, Tuple, Type, Union, ValuesView
 )
 
-from reversion.revisions import _get_options
-
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
@@ -176,14 +174,22 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
 
     @staticmethod
     def _perform_version_update(model: Type[Model], version, update_data):
+        from reversion import revisions
         version_dict_local = dict(version.field_dict)
         version_dict_local.update(update_data)
         local_obj = model(**version_dict_local)
-        version_options = _get_options(model)
+        if hasattr(revisions, "_get_options"):
+            version_options = revisions._get_options(model)
+            version_format = version_options.format
+            version_fields = version_options.fields
+        else:
+            version_adapter = revisions.get_adapter(model)
+            version_format = version_adapter.get_serialization_format()
+            version_fields = list(version_adapter.get_fields_to_serialize())
         version.serialized_data = serializers.serialize(
-            version_options.format,
+            version_format,
             (local_obj,),
-            fields=version_options.fields
+            fields=version_fields
         )
         version.save()
 
@@ -227,14 +233,15 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
 
         if self.anonymize_reversion(obj):
             from reversion.models import Version
-            versions: List[Version] = Version.objects.get_for_object(obj)
+            from gdpr.utils import get_reversion_versions, get_reversion_local_field_dict
+            versions: List[Version] = get_reversion_versions(obj)
             versions_update_dict = [
                 (
                     version,
                     {
                         name: self.get_anonymized_value_from_version(self[name], obj, version, name)
                         for name in raw_local_fields
-                        if name in version._local_field_dict
+                        if name in get_reversion_local_field_dict(version)
                     }
                 )
                 for version in versions
@@ -284,13 +291,15 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
 
         if self.anonymize_reversion(obj):
             from reversion.models import Version
-            versions = Version.objects.get_for_object(obj)
+            from gdpr.utils import get_reversion_versions, get_reversion_local_field_dict
+            versions: List[Version] = get_reversion_versions(obj)
             versions_update_dict = [
                 (
                     version,
                     {
                         name: self.get_deanonymized_value_from_version(self[name], obj, version, name)
                         for name in raw_local_fields
+                        if name in get_reversion_local_field_dict(version)
                     }
                 )
                 for version in versions
