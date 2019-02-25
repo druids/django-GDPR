@@ -1,4 +1,5 @@
 from gdpr import anonymizers
+from gdpr.anonymizers.local import cs
 from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment
 
 
@@ -39,7 +40,7 @@ class AddressAnonymizer(anonymizers.ModelAnonymizer):
 
 
 class AccountAnonymizer(anonymizers.ModelAnonymizer):
-    number = anonymizers.CzechAccountNumberFieldAnonymizer()
+    number = cs.CzechAccountNumberFieldAnonymizer()
     IBAN = anonymizers.IBANFieldAnonymizer()
     owner = anonymizers.CharFieldAnonymizer()
 

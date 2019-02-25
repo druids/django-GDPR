@@ -5,10 +5,10 @@ from django.test import TestCase
 from django.utils import timezone
 
 from gdpr.anonymizers import (
-    CharFieldAnonymizer, CzechAccountNumberFieldAnonymizer, DateFieldAnonymizer, DecimalFieldAnonymizer,
+    CharFieldAnonymizer, DateFieldAnonymizer, DecimalFieldAnonymizer,
     EmailFieldAnonymizer, IPAddressFieldAnonymizer, StaticValueAnonymizer
 )
-from gdpr.anonymizers.fields import FunctionFieldAnonymizer, JSONFieldAnonymizer
+from gdpr.anonymizers.fields import FunctionFieldAnonymizer, JSONFieldAnonymizer, SiteIDUsernameFieldAnonymizer
 
 
 class TestCharField(TestCase):
@@ -36,6 +36,33 @@ class TestEmailField(TestCase):
 
     def test_email_field(self):
         email = 'foo@bar.com'
+        out = self.field.get_encrypted_value(email, self.encryption_key)
+
+        self.assertNotEqual(out, email)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+
+        self.assertEqual(out_decrypt, email)
+
+
+class TestSiteIDUsernameFieldAnonymizer(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.field = SiteIDUsernameFieldAnonymizer()
+        cls.encryption_key = 'LoremIpsumDolorSitAmet'
+
+    def test_just_email(self):
+        email = 'foo@bar.com'
+        out = self.field.get_encrypted_value(email, self.encryption_key)
+
+        self.assertNotEqual(out, email)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+
+        self.assertEqual(out_decrypt, email)
+
+    def test_normal(self):
+        email = '1:foo@bar.com'
         out = self.field.get_encrypted_value(email, self.encryption_key)
 
         self.assertNotEqual(out, email)
@@ -104,33 +131,6 @@ class TestIPAddressField(TestCase):
         out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
 
         self.assertEqual(out_decrypt, ip)
-
-
-class TestAccountNumberField(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.field = CzechAccountNumberFieldAnonymizer()
-        cls.encryption_key = 'LoremIpsumDolorSitAmet'
-
-    def test_account_number_simple_field(self):
-        account_number = '2501277007/2010'
-        out = self.field.get_encrypted_value(account_number, self.encryption_key)
-
-        self.assertNotEqual(out, account_number)
-
-        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
-
-        self.assertEqual(out_decrypt, account_number)
-
-    def test_account_number_with_pre_num_field(self):
-        account_number = '19-2000145399/0800'
-        out = self.field.get_encrypted_value(account_number, self.encryption_key)
-
-        self.assertNotEqual(out, account_number)
-
-        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
-
-        self.assertEqual(out_decrypt, account_number)
 
 
 class TestStaticValueAnonymizer(TestCase):

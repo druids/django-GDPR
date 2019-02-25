@@ -141,44 +141,6 @@ class IPAddressFieldAnonymizer(FieldAnonymizer):
         return decrypt_ip(encryption_key, value)
 
 
-AccountNumber = namedtuple('AccountNumber', ['pre_num', 'num', 'bank'])
-
-
-class CzechAccountNumberFieldAnonymizer(FieldAnonymizer):
-    """
-    Anonymization for czech account number.
-    """
-
-    def parse_value(self, value) -> AccountNumber:
-        """
-
-        :param value:
-        :return: (predcisli)-(cislo)/(kod_banky)
-        """
-        account = re.match('(([0-9]{0,6})-)?([0-9]{1,10})/([0-9]{4})', value)
-        return AccountNumber(account[2], account[3], account[4])  # type: ignore
-
-    def get_encrypted_value(self, value, encryption_key: str):
-        account = self.parse_value(value)
-
-        encrypted_account_num = encrypt_message(encryption_key, account.num, NUMBERS)
-
-        if account.pre_num:
-            return f'{account.pre_num}-{encrypted_account_num}/{account.bank}'
-        else:
-            return f'{encrypted_account_num}/{account.bank}'
-
-    def get_decrypted_value(self, value: Any, encryption_key: str):
-        account = self.parse_value(value)
-
-        decrypted_account_num = decrypt_message(encryption_key, account.num, NUMBERS)
-
-        if account.pre_num:
-            return f'{account.pre_num}-{decrypted_account_num}/{account.bank}'
-        else:
-            return f'{decrypted_account_num}/{account.bank}'
-
-
 class IBANFieldAnonymizer(FieldAnonymizer):
     """
     Field anonymizer for International Bank Account Number.
@@ -246,3 +208,21 @@ class StaticValueAnonymizer(FieldAnonymizer):
 
     def get_encrypted_value(self, value: Any, encryption_key: str) -> Any:
         return self.value
+
+
+class SiteIDUsernameFieldAnonymizer(FieldAnonymizer):
+    """
+    Encrypts username in format 1:foo@bar.com
+    """
+
+    def get_encrypted_value(self, value, encryption_key: str):
+        split = value.split(":", 1)
+        if len(split) == 2:
+            return f"{split[0]}:{encrypt_email(encryption_key, split[1])}"
+        return encrypt_email(encryption_key, value)
+
+    def get_decrypted_value(self, value, encryption_key: str):
+        split = value.split(":", 1)
+        if len(split) == 2:
+            return f"{split[0]}:{decrypt_email(encryption_key, split[1])}"
+        return decrypt_email(encryption_key, value)
