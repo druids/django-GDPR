@@ -20,7 +20,7 @@ class BaseLoader:
     """Base class for all loaders."""
 
     def import_modules(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class AppLoader(BaseLoader):
@@ -86,7 +86,7 @@ V = TypeVar('V')
 class BaseRegister(Generic[K, V]):
     """Base class for all registers."""
 
-    _has_import_happened = False
+    _is_import_done = False
     register_dict: "OrderedDict[K, V]"
     loaders_settings: str
     default_loader: Optional[str]
@@ -107,9 +107,9 @@ class BaseRegister(Generic[K, V]):
                 str_to_class(loader_path)().import_modules()
 
     def _import_objects_once(self) -> None:
-        if self._has_import_happened:
+        if self._is_import_done:
             return
-        self._has_import_happened = True
+        self._is_import_done = True
         self._import_objects()
 
     def __iter__(self) -> Iterator[V]:

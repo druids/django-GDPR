@@ -25,7 +25,7 @@ DATABASES = {
 
 USE_TZ = True
 
-# Old HC settings
+# Old legacy settings
 # @TODO: Replace
 ANONYMIZATION_NAME_KEY = "SOMEFAKEKEY"
 ANONYMIZATION_PERSONAL_ID_KEY = 256

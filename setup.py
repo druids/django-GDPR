@@ -35,6 +35,7 @@ setup(
         'django-chamber>=0.4.0',
         'tqdm>=4.28.1',
         'pyaes>=1.6.1',
+        'unidecode',
     ],
     zip_safe=False
 )

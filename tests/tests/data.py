@@ -9,7 +9,7 @@ CUSTOMER__EMAIL3 = "bar@u.plus"
 CUSTOMER__BIRTH_DATE = date(2000, 1, 1)
 CUSTOMER__PERSONAL_ID = "0001010004"
 CUSTOMER__PHONE_NUMBER = "605222111"
-CUSTOMER__FB_ID = "4"
+CUSTOMER__FACEBOOK_ID = "4"
 CUSTOMER__IP = "127.0.0.1"
 
 CUSTOMER__KWARGS = {
@@ -19,7 +19,7 @@ CUSTOMER__KWARGS = {
     "birth_date": CUSTOMER__BIRTH_DATE,
     "personal_id": CUSTOMER__PERSONAL_ID,
     "phone_number": CUSTOMER__PHONE_NUMBER,
-    "fb_id": CUSTOMER__FB_ID,
+    "facebook_id": CUSTOMER__FACEBOOK_ID,
     "last_login_ip": CUSTOMER__IP
 }
 

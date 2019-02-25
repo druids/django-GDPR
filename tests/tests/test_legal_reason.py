@@ -8,7 +8,7 @@ from tests.purposes import (
     ACCOUNT_AND_PAYMENT_SLUG, ACCOUNT_SLUG, EMAIL_SLUG, EVERYTHING_SLUG, EmailsPurpose, FIRST_AND_LAST_NAME_SLUG)
 from tests.tests.data import (
     ACCOUNT__NUMBER, ACCOUNT__NUMBER2, ACCOUNT__OWNER, ACCOUNT__OWNER2, CUSTOMER__BIRTH_DATE, CUSTOMER__EMAIL,
-    CUSTOMER__EMAIL2, CUSTOMER__EMAIL3, CUSTOMER__FB_ID, CUSTOMER__FIRST_NAME, CUSTOMER__IP, CUSTOMER__KWARGS,
+    CUSTOMER__EMAIL2, CUSTOMER__EMAIL3, CUSTOMER__FACEBOOK_ID, CUSTOMER__FIRST_NAME, CUSTOMER__IP, CUSTOMER__KWARGS,
     CUSTOMER__LAST_NAME, CUSTOMER__PERSONAL_ID, CUSTOMER__PHONE_NUMBER)
 from tests.tests.utils import AnonymizedDataMixin, NotImplementedMixin
 
@@ -274,7 +274,7 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
         legal = LegalReason.objects.create_consent(EVERYTHING_SLUG, self.customer)
         legal.expire()
 
-        anon_customer = Customer.objects.get(pk=self.customer.pk)
+        anon_customer: Customer = Customer.objects.get(pk=self.customer.pk)
         anon_related_email: Email = Email.objects.get(pk=related_email.pk)
         anon_related_email2: Email = Email.objects.get(pk=related_email2.pk)
         anon_account: Account = Account.objects.get(pk=account.pk)
@@ -294,8 +294,8 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
         self.assertAnonymizedDataExists(anon_customer, 'personal_id')
         self.assertNotEqual(anon_customer.phone_number, CUSTOMER__PHONE_NUMBER)
         self.assertAnonymizedDataExists(anon_customer, 'phone_number')
-        self.assertNotEqual(anon_customer.fb_id, CUSTOMER__FB_ID)
-        self.assertAnonymizedDataExists(anon_customer, 'fb_id')
+        self.assertNotEqual(anon_customer.facebook_id, CUSTOMER__FACEBOOK_ID)
+        self.assertAnonymizedDataExists(anon_customer, 'facebook_id')
         self.assertNotEqual(anon_customer.last_login_ip, CUSTOMER__IP)
         self.assertAnonymizedDataExists(anon_customer, 'last_login_ip')
 

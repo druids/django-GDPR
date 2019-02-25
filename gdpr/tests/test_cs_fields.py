@@ -77,9 +77,9 @@ class TestCzechIBANSmartFieldAnonymizer(TestCase):
     def setUpTestData(cls):
         cls.field = CzechIBANSmartFieldAnonymizer()
         cls.encryption_key = 'LoremIpsumDolorSitAmet'
-        cls.text_iban = "CZ65 0800 0000 1920 0014 5399"
-        cls.no_space_text_iban = "CZ6508000000192000145399"
-        cls.invalid_text_iban = "CZ00 0800 0000 1920 0014 5399"
+        cls.text_iban = 'CZ65 0800 0000 1920 0014 5399'
+        cls.no_space_text_iban = 'CZ6508000000192000145399'
+        cls.invalid_text_iban = 'CZ00 0800 0000 1920 0014 5399'
 
     def test_czech_iban_field(self):
         out = self.field.get_encrypted_value(self.text_iban, self.encryption_key)
@@ -132,7 +132,7 @@ class TestCzechPhoneNumberField(TestCase):
         cls.encryption_key = 'LoremIpsumDolorSitAmet'
 
     def test_basic_phone_number(self):
-        phone_number = "608104120"
+        phone_number = '608104120'
         out = self.field.get_encrypted_value(phone_number, self.encryption_key)
 
         self.assertNotEqual(phone_number, out)
@@ -142,7 +142,7 @@ class TestCzechPhoneNumberField(TestCase):
         self.assertEqual(phone_number, out_decrypt)
 
     def test_plus_area_code_phone_number(self):
-        phone_number = "+420608104120"
+        phone_number = '+420608104120'
         out = self.field.get_encrypted_value(phone_number, self.encryption_key)
 
         self.assertNotEqual(phone_number, out)
@@ -152,7 +152,7 @@ class TestCzechPhoneNumberField(TestCase):
         self.assertEqual(phone_number, out_decrypt)
 
     def test_zero_zero_area_code_phone_number(self):
-        phone_number = "+420608104120"
+        phone_number = '+420608104120'
         out = self.field.get_encrypted_value(phone_number, self.encryption_key)
 
         self.assertNotEqual(phone_number, out)

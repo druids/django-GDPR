@@ -25,7 +25,7 @@ class CzechAccountNumber:
 
     def check_account_format(self) -> bool:
         pre_num = "%06d" % (self.pre_num or 0)
-        num = "0" * (10 - len(str(self.num))) + str(self.num)
+        num = '0' * (10 - len(str(self.num))) + str(self.num)
 
         pre_num_valid = sum(map(lambda x: x[0] * x[1], zip(map(lambda x: int(x), pre_num), PRE_NUM_WEIGHTS))) % 11 == 0
         num_valid = sum(map(lambda x: x[0] * x[1], zip(map(lambda x: int(x), num), NUM_WEIGHTS))) % 11 == 0
@@ -50,10 +50,10 @@ class CzechAccountNumber:
     def _brute_force_prev(self):
         self.num -= 1
         if self.num <= 0:
-            self.num = int("9" * 10)
+            self.num = int('9' * 10)
         while not self.check_account_format():
             if self.num <= 0:
-                self.num = int("9" * 10)
+                self.num = int('9' * 10)
             self.num -= 1
 
     def brute_force_prev(self, n: int):
@@ -70,16 +70,16 @@ class CzechAccountNumber:
         """
         account = re.match('((?P<pre_num>[0-9]{0,6})-)?(?P<num>[0-9]{1,10})/(?P<bank_code>[0-9]{4})', value)
         if account:
-            pre_num = account.group("pre_num")
-            num = account.group("num")
-            bank_code = account.group("bank_code")
+            pre_num = account.group('pre_num')
+            num = account.group('num')
+            bank_code = account.group('bank_code')
             return cls(pre_num=pre_num, pre_num_len=len(pre_num or ""), num=num, num_len=len(num),
                        bank=bank_code, bank_len=len(bank_code))
         raise ValidationError(f'Str \'{value}\' does not appear to be czech account number.')
 
     def __str__(self):
         return ((f'{str(self.pre_num).rjust(self.pre_num_len, "0") if self.pre_num_len else self.pre_num}-'
-                 if self.pre_num else ""
+                 if self.pre_num else ''
                  ) + f'{str(self.num).rjust(self.num_len, "0")}/{str(self.bank).rjust(self.bank_len, "0")}')
 
 
@@ -111,24 +111,24 @@ class CzechIBAN(CzechAccountNumber):
             value)
 
         if account:
-            control_code = int(account.group("control_code"))
-            bank_code = int(account.group("bank_code"))
-            pre_num = int(account.group("pre_num").replace(" ", ""))
-            num = int(account.group("num").replace(" ", ""))
+            control_code = int(account.group('control_code'))
+            bank_code = int(account.group('bank_code'))
+            pre_num = int(account.group('pre_num').replace(' ', ''))
+            num = int(account.group('num').replace(' ', ''))
 
             return cls(
-                control_code=control_code, has_spaces=" " in value,
+                control_code=control_code, has_spaces=' ' in value,
                 pre_num=pre_num, num=num, bank=bank_code)
         raise ValidationError(f'IBAN \'{value}\' does not appear to be czech IBAN.')
 
     def _to_str(self, spaces: Optional[bool] = None):
-        pre_num = str(self.pre_num).rjust(6, "0")
-        num = str(self.num).rjust(10, "0")
+        pre_num = str(self.pre_num).rjust(6, '0')
+        num = str(self.num).rjust(10, '0')
         out = (f'CZ{str(self.control_code).rjust(2, "0")} {str(self.bank).rjust(4, "0")} {pre_num[:4]} '
                f'{pre_num[4:]}{num[:2]} {num[2:6]} {num[6:]}')
         if (spaces is None and self.has_spaces) or spaces:
             return out
-        return out.replace(" ", "")
+        return out.replace(' ', '')
 
     def __str__(self) -> str:
         return self._to_str()
@@ -234,9 +234,9 @@ class CzechPhoneNumberFieldAnonymizer(FieldAnonymizer):
     def get_encrypted_value(self, value: str, encryption_key: str):
         area_code, phone_number = self.split_phone_number(value)
         encrypted_phone_number = encrypt_message(encryption_key, phone_number[3:], NUMBERS)
-        return f"{area_code}{phone_number[:3]}{encrypted_phone_number}"
+        return f'{area_code}{phone_number[:3]}{encrypted_phone_number}'
 
     def get_decrypted_value(self, value: str, encryption_key: str):
         area_code, phone_number = self.split_phone_number(value)
         encrypted_phone_number = decrypt_message(encryption_key, phone_number[3:], NUMBERS)
-        return f"{area_code}{phone_number[:3]}{encrypted_phone_number}"
+        return f'{area_code}{phone_number[:3]}{encrypted_phone_number}'

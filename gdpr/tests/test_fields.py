@@ -277,7 +277,7 @@ class TestJSONFieldAnonymizer(TestCase):
         self.assertDictEqual(json, out_decrypt)
 
     def test_list(self):
-        json = ["banana", "oranges", 5, 3.14, False, None, {'name': 'Bob'}]
+        json = ['banana', 'oranges', 5, 3.14, False, None, {'name': 'Bob'}]
 
         out = self.field.anonymize_json_value(json, self.encryption_key)
 

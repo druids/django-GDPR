@@ -11,6 +11,7 @@ Customer
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 from gdpr.mixins import AnonymizationModel
 from gdpr.utils import is_reversion_installed
@@ -26,7 +27,9 @@ class Customer(AnonymizationModel):
     birth_date = models.DateField(blank=True, null=True)
     personal_id = models.CharField(max_length=10, blank=True, null=True)  # Rodne cislo
     phone_number = models.CharField(max_length=9, blank=True, null=True)
-    fb_id = models.CharField(max_length=256, blank=True, null=True)
+    facebook_id = models.CharField(
+        max_length=256, blank=True, null=True,
+        verbose_name=_("Facebook ID"), help_text=_("Facebook ID used for login via Facebook."))
     last_login_ip = models.GenericIPAddressField(blank=True, null=True)
 
     def save(self, *args, **kwargs):

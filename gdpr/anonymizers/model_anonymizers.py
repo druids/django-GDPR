@@ -13,16 +13,41 @@ from django.db import transaction
 from django.db.models import Model, QuerySet
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor, ReverseManyToOneDescriptor
 
-from gdpr.anonymizers.base import FieldAnonymizer, ModelAnonymizerMeta, RelationAnonymizer
+from gdpr.anonymizers.base import FieldAnonymizer, RelationAnonymizer
 from gdpr.fields import Fields
 from gdpr.models import AnonymizedData, LegalReason
-
 
 if TYPE_CHECKING:
     from gdpr.purposes.default import AbstractPurpose
 
 FieldList = Union[List, Tuple, KeysView[str]]  # List, tuple or return of dict keys() method.
 FieldMatrix = Union[str, Tuple[Any, ...]]
+
+
+class ModelAnonymizerMeta(type):
+    """
+    Metaclass for anonymizers. The main purpose of the metaclass is to register anonymizers and find field anonymizers
+    defined in the class as attributes and store it to the fields property.
+    """
+
+    def __new__(cls, name, bases, attrs):
+        from gdpr.loading import anonymizer_register
+
+        new_obj = super().__new__(cls, name, bases, attrs)
+
+        # Also ensure initialization is only performed for subclasses of ModelAnonymizer
+        # (excluding Model class itself).
+        parents = [b for b in bases if isinstance(b, ModelAnonymizerMeta)]
+        if not parents or not hasattr(new_obj, 'Meta') or getattr(new_obj.Meta, 'abstract', False):
+            return new_obj
+
+        fields = {}
+        for name, obj in attrs.items():
+            if isinstance(obj, FieldAnonymizer):
+                fields[name] = obj
+        new_obj.fields = fields
+        anonymizer_register.register(new_obj.Meta.model, new_obj)
+        return new_obj
 
 
 class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
@@ -74,12 +99,12 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
                 'utf-8')).hexdigest()
 
     def is_reversible(self, obj) -> bool:
-        if hasattr(self.Meta, "reversible_anonymization"):  # type: ignore
+        if hasattr(self.Meta, 'reversible_anonymization'):  # type: ignore
             return self.Meta.reversible_anonymization  # type: ignore
         return True
 
     def anonymize_reversion(self, obj) -> bool:
-        if hasattr(self.Meta, "anonymize_reversion"):  # type: ignore
+        if hasattr(self.Meta, 'anonymize_reversion'):  # type: ignore
             return self.Meta.anonymize_reversion  # type: ignore
         return False
 
@@ -178,7 +203,7 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
         version_dict_local = dict(version.field_dict)
         version_dict_local.update(update_data)
         local_obj = model(**version_dict_local)
-        if hasattr(revisions, "_get_options"):
+        if hasattr(revisions, '_get_options'):
             version_options = revisions._get_options(model)
             version_format = version_options.format
             version_fields = version_options.fields
@@ -223,7 +248,7 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
                       fields: Union[Fields, FieldMatrix] = '__ALL__', base_encryption_key: Optional[str] = None):
 
         if base_encryption_key:
-            self._base_encryption_key = base_encryption_key
+            self.set_base_encryption_key(base_encryption_key)
 
         parsed_fields: Fields = Fields(fields, obj.__class__) if not isinstance(fields, Fields) else fields
 

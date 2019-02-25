@@ -49,8 +49,6 @@ class FunctionFieldAnonymizer(FieldAnonymizer):
             self.deanonymize_func = deanonymize_func
         elif deanonymize_func is not None:
             raise ImproperlyConfigured('Supplied deanonymize_func is not callable.')
-        else:
-            self.is_reversible = False
 
     def get_numeric_encryption_key(self, encryption_key: str) -> int:
         return numerize_key(encryption_key) % self.max_anonymization_range
@@ -223,13 +221,13 @@ class SiteIDUsernameFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_encrypted_value(self, value, encryption_key: str):
-        split = value.split(":", 1)
+        split = value.split(':', 1)
         if len(split) == 2:
-            return f"{split[0]}:{encrypt_email(encryption_key, split[1])}"
+            return f'{split[0]}:{encrypt_email(encryption_key, split[1])}'
         return encrypt_email(encryption_key, value)
 
     def get_decrypted_value(self, value, encryption_key: str):
-        split = value.split(":", 1)
+        split = value.split(':', 1)
         if len(split) == 2:
-            return f"{split[0]}:{decrypt_email(encryption_key, split[1])}"
+            return f'{split[0]}:{decrypt_email(encryption_key, split[1])}'
         return decrypt_email(encryption_key, value)

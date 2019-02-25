@@ -11,8 +11,8 @@ from tests.models import Account, Address, ContactForm, Customer, Email, Note, P
 from .data import (
     ACCOUNT__IBAN, ACCOUNT__NUMBER, ACCOUNT__OWNER, ACCOUNT__SWIFT, ADDRESS__CITY, ADDRESS__HOUSE_NUMBER,
     ADDRESS__POST_CODE, ADDRESS__STREET, CUSTOMER__BIRTH_DATE, CUSTOMER__EMAIL, CUSTOMER__EMAIL2, CUSTOMER__EMAIL3,
-    CUSTOMER__FB_ID, CUSTOMER__FIRST_NAME, CUSTOMER__IP, CUSTOMER__KWARGS, CUSTOMER__LAST_NAME, CUSTOMER__PERSONAL_ID,
-    CUSTOMER__PHONE_NUMBER, PAYMENT__VALUE)
+    CUSTOMER__FACEBOOK_ID, CUSTOMER__FIRST_NAME, CUSTOMER__IP, CUSTOMER__KWARGS, CUSTOMER__LAST_NAME,
+    CUSTOMER__PERSONAL_ID, CUSTOMER__PHONE_NUMBER, PAYMENT__VALUE)
 from .utils import AnonymizedDataMixin, NotImplementedMixin
 
 
@@ -41,7 +41,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         self.assertAnonymizedDataExists(anon_customer, "phone_number")
         self.assertNotEquals(anon_customer.birth_date, CUSTOMER__BIRTH_DATE)
         self.assertAnonymizedDataExists(anon_customer, "first_name")
-        self.assertNotEquals(anon_customer.fb_id, CUSTOMER__FB_ID)
+        self.assertNotEquals(anon_customer.facebook_id, CUSTOMER__FACEBOOK_ID)
         self.assertAnonymizedDataExists(anon_customer, "first_name")
         self.assertNotEqual(str(anon_customer.last_login_ip), CUSTOMER__IP)
         self.assertAnonymizedDataExists(anon_customer, "first_name")

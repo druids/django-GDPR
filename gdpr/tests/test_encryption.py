@@ -86,7 +86,7 @@ IBANS = [
 class TestEncryption(TestCase):
     def setUp(self):
         self.faker = Faker()
-        self.encryption_key = "LoremIpsumDolorSitAmet"
+        self.encryption_key = 'LoremIpsumDolorSitAmet'
 
     def test_basic_name_encryption(self):
         cleartext = self.faker.name()

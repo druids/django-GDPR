@@ -24,7 +24,7 @@ IPType = Union[IPv4Type, IPv6Type]
 
 def derive_key(key: str):
     """
-    PBKDF2(SHA1, Password, "ipcipheripcipher", 50000, 16)
+    PBKDF2(SHA1, Password, 'ipcipheripcipher', 50000, 16)
     """
 
     return pbkdf2_hmac('sha1', bytes(key, encoding="utf-8"), bytes('ipcipheripcipher', encoding='utf-8'), 50000, 16)

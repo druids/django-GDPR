@@ -12,7 +12,7 @@ class CustomerAnonymizer(anonymizers.ModelAnonymizer):
     birth_date = anonymizers.DateFieldAnonymizer()
     personal_id = anonymizers.PersonalIIDFieldAnonymizer()
     phone_number = cs.CzechPhoneNumberFieldAnonymizer()
-    fb_id = anonymizers.CharFieldAnonymizer()
+    facebook_id = anonymizers.CharFieldAnonymizer()
     last_login_ip = anonymizers.IPAddressFieldAnonymizer()
 
     notes = anonymizers.ReverseGenericRelationAnonymizer('tests', 'Note')
