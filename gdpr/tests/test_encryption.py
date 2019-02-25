@@ -1,9 +1,7 @@
+from django.test import TestCase
 from faker import Faker
 
-from django.test import TestCase
-
-from gdpr.encryption import decrypt_email, decrypt_message, encrypt_email, encrypt_message, translate_IBAN
-
+from gdpr.encryption import decrypt_email_address, decrypt_text, encrypt_email_address, encrypt_text, translate_iban
 
 IBANS = [
     'AL47 2121 1009 0000 0002 3569 8741',
@@ -84,32 +82,61 @@ IBANS = [
 
 
 class TestEncryption(TestCase):
+    """
+    Tests the `gdpr.encryption` module.
+    """
+
     def setUp(self):
         self.faker = Faker()
         self.encryption_key = 'LoremIpsumDolorSitAmet'
 
-    def test_basic_name_encryption(self):
+    def test_encrypt_text_full_name(self):
+        """
+        Test function `gdpr.encryption.encrypt_text` by using human full name from Faker lib.
+        """
         cleartext = self.faker.name()
-        ciphertext = encrypt_message(self.encryption_key, cleartext)
 
-        self.assertNotEqual(cleartext, ciphertext)
+        ciphertext = encrypt_text(self.encryption_key, cleartext)
+        self.assertNotEqual(
+            cleartext, ciphertext,
+            "The encrypted name is equal to the original name."
+        )
 
-        decrypted = decrypt_message(self.encryption_key, ciphertext)
+        decrypted = decrypt_text(self.encryption_key, ciphertext)
+        self.assertEqual(
+            cleartext, decrypted,
+            "The decrypted name is not equal to the original name."
+        )
 
-        self.assertEqual(cleartext, decrypted)
-
-    def test_email_encryption(self):
+    def test_encrypt_email_address(self):
+        """
+        Test function `gdpr.encryption.encrypt_email_address` by using email address from Faker lib.
+        """
         cleartext = self.faker.email()
-        ciphertext = encrypt_email(self.encryption_key, cleartext)
 
-        self.assertNotEqual(cleartext, ciphertext)
+        ciphertext = encrypt_email_address(self.encryption_key, cleartext)
+        self.assertNotEqual(
+            cleartext, ciphertext,
+            "The encrypted email address is equal to the original email address."
+        )
 
-        decrypted = decrypt_email(self.encryption_key, ciphertext)
+        decrypted = decrypt_email_address(self.encryption_key, ciphertext)
+        self.assertEqual(
+            cleartext, decrypted,
+            "The decrypted email address is not equal to the original email address."
+        )
 
-        self.assertEqual(cleartext, decrypted)
-
-    def test_IBAN_encryption(self):
+    def test_translate_iban(self):
+        """
+        Test function `gdpr.encryption.translate_iban` by using an example IBAN for every country using IBAN system.
+        """
         for IBAN in IBANS:
-            encrypted = translate_IBAN(self.encryption_key, IBAN)
-            self.assertNotEqual(encrypted, IBAN)
-            self.assertEqual(translate_IBAN(self.encryption_key, encrypted, False), IBAN)
+            encrypted = translate_iban(self.encryption_key, IBAN)
+            self.assertNotEqual(
+                encrypted, IBAN,
+                "The encrypted IBAN is equal to the original IBAN."
+            )
+            self.assertEqual(
+                translate_iban(self.encryption_key, encrypted, False), IBAN,
+                "The decrypted IBAN is not equal to the original IBAN."
+            )

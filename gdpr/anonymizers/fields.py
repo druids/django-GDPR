@@ -7,8 +7,8 @@ from unidecode import unidecode
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
 from gdpr.encryption import (
-    decrypt_email, decrypt_message, encrypt_email, encrypt_message, numerize_key, translate_IBAN,
-    translate_message
+    decrypt_email_address, decrypt_text, encrypt_email_address, encrypt_text, numerize_key, translate_iban,
+    translate_text
 )
 from gdpr.ipcypher import decrypt_ip, encrypt_ip
 
@@ -102,19 +102,19 @@ class CharFieldAnonymizer(FieldAnonymizer):
         super().__init__(*args, **kwargs)
 
     def get_encrypted_value(self, value, encryption_key: str):
-        return encrypt_message(encryption_key, value if not self.transliterate else unidecode(value))
+        return encrypt_text(encryption_key, value if not self.transliterate else unidecode(value))
 
     def get_decrypted_value(self, value, encryption_key: str):
-        return decrypt_message(encryption_key, value)
+        return decrypt_text(encryption_key, value)
 
 
 class EmailFieldAnonymizer(FieldAnonymizer):
 
     def get_encrypted_value(self, value, encryption_key: str):
-        return encrypt_email(encryption_key, value)
+        return encrypt_email_address(encryption_key, value)
 
     def get_decrypted_value(self, value, encryption_key: str):
-        return decrypt_email(encryption_key, value)
+        return decrypt_email_address(encryption_key, value)
 
 
 class DecimalFieldAnonymizer(NumericFieldAnonymizer):
@@ -152,10 +152,10 @@ class IBANFieldAnonymizer(FieldAnonymizer):
     """
 
     def get_decrypted_value(self, value: Any, encryption_key: str):
-        return translate_IBAN(encryption_key, value)
+        return translate_iban(encryption_key, value)
 
     def get_encrypted_value(self, value: Any, encryption_key: str):
-        return translate_IBAN(encryption_key, value, False)
+        return translate_iban(encryption_key, value, False)
 
 
 class JSONFieldAnonymizer(FieldAnonymizer):
@@ -176,7 +176,7 @@ class JSONFieldAnonymizer(FieldAnonymizer):
         if value is None:
             return None
         elif type(value) is str:
-            return translate_message(encryption_key, value, anonymize)  # type: ignore
+            return translate_text(encryption_key, value, anonymize)  # type: ignore
         elif type(value) is int:
             return value + self.get_numeric_encryption_key(encryption_key, value) * (  # type: ignore
                 1 if anonymize else -1)
@@ -223,11 +223,11 @@ class SiteIDUsernameFieldAnonymizer(FieldAnonymizer):
     def get_encrypted_value(self, value, encryption_key: str):
         split = value.split(':', 1)
         if len(split) == 2:
-            return f'{split[0]}:{encrypt_email(encryption_key, split[1])}'
-        return encrypt_email(encryption_key, value)
+            return f'{split[0]}:{encrypt_email_address(encryption_key, split[1])}'
+        return encrypt_email_address(encryption_key, value)
 
     def get_decrypted_value(self, value, encryption_key: str):
         split = value.split(':', 1)
         if len(split) == 2:
-            return f'{split[0]}:{decrypt_email(encryption_key, split[1])}'
-        return decrypt_email(encryption_key, value)
+            return f'{split[0]}:{decrypt_email_address(encryption_key, split[1])}'
+        return decrypt_email_address(encryption_key, value)

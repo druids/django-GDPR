@@ -4,7 +4,7 @@ from typing import Any, Optional, Tuple, Union
 from django.core.exceptions import ValidationError
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
-from gdpr.encryption import NUMBERS, decrypt_message, encrypt_message
+from gdpr.encryption import NUMBERS, decrypt_text, encrypt_text
 
 
 class CzechAccountNumber:
@@ -190,7 +190,7 @@ class CzechAccountNumberFieldAnonymizer(NumericFieldAnonymizer):
         if self.use_smart_method and account.check_account_format():
             return str(account.brute_force_next(self.get_numeric_encryption_key(encryption_key)))
 
-        account.num = int(encrypt_message(encryption_key, str(account.num), NUMBERS))
+        account.num = int(encrypt_text(encryption_key, str(account.num), NUMBERS))
 
         return str(account)
 
@@ -200,7 +200,7 @@ class CzechAccountNumberFieldAnonymizer(NumericFieldAnonymizer):
         if self.use_smart_method and account.check_account_format():
             return str(account.brute_force_prev(self.get_numeric_encryption_key(encryption_key)))
 
-        account.num = int(decrypt_message(encryption_key, str(account.num), NUMBERS))
+        account.num = int(decrypt_text(encryption_key, str(account.num), NUMBERS))
 
         return str(account)
 
@@ -233,10 +233,10 @@ class CzechPhoneNumberFieldAnonymizer(FieldAnonymizer):
 
     def get_encrypted_value(self, value: str, encryption_key: str):
         area_code, phone_number = self.split_phone_number(value)
-        encrypted_phone_number = encrypt_message(encryption_key, phone_number[3:], NUMBERS)
+        encrypted_phone_number = encrypt_text(encryption_key, phone_number[3:], NUMBERS)
         return f'{area_code}{phone_number[:3]}{encrypted_phone_number}'
 
     def get_decrypted_value(self, value: str, encryption_key: str):
         area_code, phone_number = self.split_phone_number(value)
-        encrypted_phone_number = decrypt_message(encryption_key, phone_number[3:], NUMBERS)
+        encrypted_phone_number = decrypt_text(encryption_key, phone_number[3:], NUMBERS)
         return f'{area_code}{phone_number[:3]}{encrypted_phone_number}'
