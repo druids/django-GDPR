@@ -1,6 +1,9 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from gdpr.anonymizers.local.cs import CzechAccountNumber, CzechAccountNumberFieldAnonymizer, CzechPhoneNumberAnonymizer
+from gdpr.anonymizers.local.cs import (
+    CzechAccountNumber, CzechAccountNumberFieldAnonymizer, CzechIBAN, CzechIBANSmartFieldAnonymizer,
+    CzechPhoneNumberFieldAnonymizer)
 
 
 class TestCzechAccountNumberField(TestCase):
@@ -52,8 +55,8 @@ class TestCzechAccountNumberField(TestCase):
         self.assertEqual(out_decrypt, account_number)
 
     def test_account_format_check(self):
-        self.assertTrue(CzechAccountNumber.parse('19-2000145399/0800').check_format())
-        self.assertTrue(CzechAccountNumber.parse('2501277007/2010').check_format())
+        self.assertTrue(CzechAccountNumber.parse('19-2000145399/0800').check_account_format())
+        self.assertTrue(CzechAccountNumber.parse('2501277007/2010').check_account_format())
 
     def test_brute_force(self):
         account = CzechAccountNumber.parse('19-2000145399/0800')
@@ -69,10 +72,63 @@ class TestCzechAccountNumberField(TestCase):
         self.assertEqual(original_account_num, account.num)
 
 
+class TestCzechIBANSmartFieldAnonymizer(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.field = CzechIBANSmartFieldAnonymizer()
+        cls.encryption_key = 'LoremIpsumDolorSitAmet'
+        cls.text_iban = "CZ65 0800 0000 1920 0014 5399"
+        cls.no_space_text_iban = "CZ6508000000192000145399"
+        cls.invalid_text_iban = "CZ00 0800 0000 1920 0014 5399"
+
+    def test_czech_iban_field(self):
+        out = self.field.get_encrypted_value(self.text_iban, self.encryption_key)
+        self.assertNotEqual(out, self.text_iban)
+
+        out_decrypted = self.field.get_decrypted_value(out, self.encryption_key)
+        self.assertEqual(out_decrypted, self.text_iban)
+
+    def test_czech_iban_field_no_space(self):
+        out = self.field.get_encrypted_value(self.no_space_text_iban, self.encryption_key)
+        self.assertNotEqual(out, self.no_space_text_iban)
+        self.assertNotEqual(out, self.text_iban)
+
+        out_decrypted = self.field.get_decrypted_value(out, self.encryption_key)
+        self.assertEqual(out_decrypted, self.no_space_text_iban)
+
+    def test_czech_iban_field_get_encrypted_value_invalid_format_raises(self):
+        self.assertRaises(ValidationError, self.field.get_encrypted_value, self.invalid_text_iban, self.encryption_key)
+
+    def test_czech_iban_field_get_decrypted_value_invalid_format_raises(self):
+        self.assertRaises(ValidationError, self.field.get_decrypted_value, self.invalid_text_iban, self.encryption_key)
+
+    def test_czech_iban_parse_and_str_with_spaces(self):
+        self.assertEqual(self.text_iban, str(CzechIBAN.parse(self.text_iban)))
+
+    def test_czech_iban_parse_and_str_without_spaces(self):
+        self.assertEqual(self.no_space_text_iban, str(CzechIBAN.parse(self.no_space_text_iban)))
+
+    def test_czech_iban_check_format(self):
+        self.assertTrue(CzechIBAN.parse(self.text_iban).check_iban_format())
+
+    def test_czech_iban_check_format_invalid(self):
+        self.assertFalse(CzechIBAN.parse(self.invalid_text_iban).check_iban_format())
+
+    def test_brute_force(self):
+        account = CzechIBAN.parse(self.text_iban)
+        key = 314
+
+        account.brute_force_next(key)
+        self.assertNotEqual(self.text_iban, str(account))
+
+        account.brute_force_prev(key)
+        self.assertEqual(self.text_iban, str(account))
+
+
 class TestCzechPhoneNumberField(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.field = CzechPhoneNumberAnonymizer()
+        cls.field = CzechPhoneNumberFieldAnonymizer()
         cls.encryption_key = 'LoremIpsumDolorSitAmet'
 
     def test_basic_phone_number(self):
