@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from gdpr.anonymizers.local.cs import CzechAccountNumberFieldAnonymizer, CzechPhoneNumberAnonymizer
+from gdpr.anonymizers.local.cs import CzechAccountNumber, CzechAccountNumberFieldAnonymizer, CzechPhoneNumberAnonymizer
 
 
 class TestCzechAccountNumberField(TestCase):
@@ -52,20 +52,21 @@ class TestCzechAccountNumberField(TestCase):
         self.assertEqual(out_decrypt, account_number)
 
     def test_account_format_check(self):
-        self.assertTrue(self.field.check_account_format(self.field.parse_value('19-2000145399/0800')))
-        self.assertTrue(self.field.check_account_format(self.field.parse_value('2501277007/2010')))
+        self.assertTrue(CzechAccountNumber.parse('19-2000145399/0800').check_format())
+        self.assertTrue(CzechAccountNumber.parse('2501277007/2010').check_format())
 
     def test_brute_force(self):
-        account = self.field.parse_value('19-2000145399/0800')
+        account = CzechAccountNumber.parse('19-2000145399/0800')
         key = 314
+        original_account_num = account.num
 
-        out = self.field.brute_force_next(account, key)
+        account.brute_force_next(key)
 
-        self.assertNotEqual(account.num, out.num)
+        self.assertNotEqual(original_account_num, account.num)
 
-        out_decrypt = self.field.brute_force_prev(out, key)
+        account.brute_force_prev(key)
 
-        self.assertEqual(account.num, out_decrypt.num)
+        self.assertEqual(original_account_num, account.num)
 
 
 class TestCzechPhoneNumberField(TestCase):

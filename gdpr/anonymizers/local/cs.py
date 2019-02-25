@@ -1,11 +1,80 @@
 import re
-from collections import namedtuple
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple, Union
+
+from django.core.exceptions import ValidationError
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
-from gdpr.encryption import encrypt_message, decrypt_message, NUMBERS
+from gdpr.encryption import NUMBERS, decrypt_message, encrypt_message
 
-AccountNumber = namedtuple('AccountNumber', ['pre_num', 'num', 'bank'])
+
+class CzechAccountNumber:
+    pre_num: Optional[int]
+    pre_num_len: Optional[int]
+    num: int
+    num_len: int = 10
+    bank: int
+
+    def __init__(self, num: Union[int, str], bank: Union[int, str], pre_num: Optional[Union[int, str]] = None,
+                 num_len: int = 10, pre_num_len: Optional[int] = None, bank_len: int = 4):
+        self.num = int(num)
+        self.num_len = num_len
+        self.bank = int(bank)
+        self.bank_len = bank_len
+        self.pre_num_len = pre_num_len
+        self.pre_num = int(pre_num) if pre_num else None
+
+    def check_format(self) -> bool:
+        pre_num = "%06d" % (self.pre_num or 0)
+        num = "0" * (10 - len(str(self.num))) + str(self.num)
+
+        pre_num_valid = sum(map(lambda x: x[0] * x[1], zip(map(lambda x: int(x), pre_num), PRE_NUM_WEIGHTS))) % 11 == 0
+        num_valid = sum(map(lambda x: x[0] * x[1], zip(map(lambda x: int(x), num), NUM_WEIGHTS))) % 11 == 0
+
+        return num_valid and pre_num_valid
+
+    def _brute_force_next(self):
+        self.num += 1
+        if len(str(self.num)) > 10:
+            self.num = 0
+        while not self.check_format():
+            if len(str(self.num)) > 10:
+                self.num = 0
+            self.num += 1
+
+    def brute_force_next(self, n: int):
+        for i in range(n):
+            self._brute_force_next()
+
+    def _brute_force_prev(self):
+        self.num -= 1
+        if self.num <= 0:
+            self.num = int("9" * 10)
+        while not self.check_format():
+            if self.num <= 0:
+                self.num = int("9" * 10)
+            self.num -= 1
+
+    def brute_force_prev(self, n: int):
+        for i in range(n):
+            self._brute_force_prev()
+
+    @classmethod
+    def parse(cls, value: str) -> "CzechAccountNumber":
+        """
+        :param value:
+        :return: AccountNumber(predcisli)-(cislo)/(kod_banky)
+        """
+        account = re.match('(([0-9]{0,6})-)?([0-9]{1,10})/([0-9]{4})', value)
+        if account:
+            return cls(pre_num=account[2], pre_num_len=len(account[2] or ""), num=account[3], num_len=len(account[3]),
+                       bank=account[4], bank_len=len(account[4]))
+        raise ValidationError(f'Str \'{value}\' does not appear to be czech account number.')
+
+    def __str__(self):
+        return ((f'{str(self.pre_num).rjust(self.pre_num_len, "0") if self.pre_num_len else self.pre_num}-'
+                 if self.pre_num else ""
+                 ) + f'{str(self.num).rjust(self.num_len, "0")}/{str(self.bank).rjust(self.bank_len, "0")}')
+
 
 PRE_NUM_WEIGHTS = [10, 5, 8, 4, 2, 1]
 NUM_WEIGHTS = [6, 3, 7, 9, 10, 5, 8, 4, 2, 1]
@@ -24,85 +93,27 @@ class CzechAccountNumberFieldAnonymizer(NumericFieldAnonymizer):
         self.use_smart_method = use_smart_method
         super().__init__(*args, **kwargs)
 
-    def check_account_format(self, value: AccountNumber) -> bool:
-        pre_num = "%06d" % int(value.pre_num or 0)
-        num = "0" * (10 - len(value.num)) + value.num
-
-        pre_num_valid = sum(map(lambda x: x[0] * x[1], zip(map(lambda x: int(x), pre_num), PRE_NUM_WEIGHTS))) % 11 == 0
-        num_valid = sum(map(lambda x: x[0] * x[1], zip(map(lambda x: int(x), num), NUM_WEIGHTS))) % 11 == 0
-
-        return num_valid and pre_num_valid
-
-    def parse_value(self, value) -> AccountNumber:
-        """
-
-        :param value:
-        :return: (predcisli)-(cislo)/(kod_banky)
-        """
-        account = re.match('(([0-9]{0,6})-)?([0-9]{1,10})/([0-9]{4})', value)
-        return AccountNumber(account[2], account[3], account[4])  # type: ignore
-
-    def _brute_force_next(self, value: AccountNumber) -> AccountNumber:
-        new_value = int(value.num) + 1
-        if len(str(new_value)) > 10:
-            new_value = 0
-        while not self.check_account_format((lambda x: AccountNumber(value.pre_num, str(x), value.bank))(new_value)):
-            if len(str(new_value)) > 10:
-                new_value = 0
-            new_value += 1
-
-        return AccountNumber(value.pre_num, "0" * (10 - len(str(new_value))) + str(new_value), value.bank)
-
-    def brute_force_next(self, value: AccountNumber, n: int) -> AccountNumber:
-        new_value = value
-        for i in range(n):
-            new_value = self._brute_force_next(new_value)
-        return new_value
-
-    def _brute_force_prev(self, value: AccountNumber) -> AccountNumber:
-        new_value = int(value.num) - 1
-        if new_value <= 0:
-            new_value = int("9" * 10)
-        while not self.check_account_format((lambda x: AccountNumber(value.pre_num, str(x), value.bank))(new_value)):
-            if new_value <= 0:
-                new_value = int("9" * 10)
-            new_value -= 1
-
-        return AccountNumber(value.pre_num, "0" * (10 - len(str(new_value))) + str(new_value), value.bank)
-
-    def brute_force_prev(self, value: AccountNumber, n: int) -> AccountNumber:
-        new_value = value
-        for i in range(n):
-            new_value = self._brute_force_prev(new_value)
-        return new_value
-
-    def str_account_number(self, account: AccountNumber) -> str:
-        if account.pre_num:
-            return f'{account.pre_num}-{account.num}/{account.bank}'
-        else:
-            return f'{account.num}/{account.bank}'
-
     def get_encrypted_value(self, value, encryption_key: str):
-        account = self.parse_value(value)
+        account = CzechAccountNumber.parse(value)
 
-        if self.use_smart_method and self.check_account_format(account):
-            return self.str_account_number(
-                self.brute_force_next(account, self.get_numeric_encryption_key(encryption_key)))
+        if self.use_smart_method and account.check_format():
+            account.brute_force_next(self.get_numeric_encryption_key(encryption_key))
+            return str(account)
 
-        encrypted_account_num = encrypt_message(encryption_key, account.num, NUMBERS)
+        account.num = int(encrypt_message(encryption_key, str(account.num), NUMBERS))
 
-        return self.str_account_number(AccountNumber(account.pre_num, encrypted_account_num, account.bank))
+        return str(account)
 
     def get_decrypted_value(self, value: Any, encryption_key: str):
-        account = self.parse_value(value)
+        account = CzechAccountNumber.parse(value)
 
-        if self.use_smart_method and self.check_account_format(account):
-            return self.str_account_number(
-                self.brute_force_prev(account, self.get_numeric_encryption_key(encryption_key)))
+        if self.use_smart_method and account.check_format():
+            account.brute_force_prev(self.get_numeric_encryption_key(encryption_key))
+            return str(account)
 
-        decrypted_account_num = decrypt_message(encryption_key, account.num, NUMBERS)
+        account.num = int(decrypt_message(encryption_key, str(account.num), NUMBERS))
 
-        return self.str_account_number(AccountNumber(account.pre_num, decrypted_account_num, account.bank))
+        return str(account)
 
 
 class CzechPhoneNumberAnonymizer(FieldAnonymizer):

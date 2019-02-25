@@ -8,10 +8,10 @@ class CustomerAnonymizer(anonymizers.ModelAnonymizer):
     last_name = anonymizers.MD5TextFieldAnonymizer()
     primary_email_address = anonymizers.EmailFieldAnonymizer()
 
-    full_name = anonymizers.NameFieldAnonymizer()
+    full_name = anonymizers.CharFieldAnonymizer()
     birth_date = anonymizers.DateFieldAnonymizer()
     personal_id = anonymizers.PersonalIIDFieldAnonymizer()
-    phone_number = anonymizers.PhoneFieldAnonymizer()
+    phone_number = cs.CzechPhoneNumberAnonymizer()
     fb_id = anonymizers.CharFieldAnonymizer()
     last_login_ip = anonymizers.IPAddressFieldAnonymizer()
 

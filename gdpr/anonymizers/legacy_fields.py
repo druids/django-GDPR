@@ -1,12 +1,9 @@
 import hashlib
 import os
-import re
 from os.path import basename
 
 from django.conf import settings
 from django.core.files.base import ContentFile
-
-from chamber.utils import remove_accent
 
 from gdpr.anonymizers.base import FieldAnonymizer
 
@@ -19,6 +16,7 @@ class MD5TextFieldAnonymizer(FieldAnonymizer):
     """
 
     empty_values = [None, '']
+    is_reversible = False
 
     def get_encrypted_value(self, value, encryption_key):
         return hashlib.md5(value.encode('utf-8')).hexdigest()[:len(value)] if value else value
@@ -31,6 +29,7 @@ class EmailFieldAnonymizer(FieldAnonymizer):
     """
 
     empty_values = [None, '']
+    is_reversible = False
 
     def get_encrypted_value(self, value, encryption_key):
         return '{}@{}'.format(
@@ -46,51 +45,11 @@ class UsernameFieldAnonymizer(EmailFieldAnonymizer):
     """
 
     ignore_empty_values = False
+    is_reversible = False
 
     def get_encrypted_value(self, value, encryption_key):
         site_id, email = value.split(':', 1)
         return '{}:{}'.format(site_id, super().get_anonymized_value(email))
-
-
-class NameFieldAnonymizer(FieldAnonymizer):
-    """
-    Anonymization of first name and last name of the customer with HC method. There is used Ceasar cipher.
-    There is used only 26 characters [A-Z] and space. Chars that are not space or cannot be converted from UTF-8 to
-    the [A-Z] are replaced with char "Q".
-    """
-
-    empty_values = [None, '']
-
-    @staticmethod
-    def _char_to_number(char_value):
-        return ord(char_value) - 64
-
-    @staticmethod
-    def _number_to_char(int_value):
-        return chr((int_value % 27) + 64)
-
-    def get_encrypted_value(self, value, encryption_key):
-        normalized_value = re.sub(r'[^A-Z ]', 'Q', remove_accent(value.strip()).upper())
-        normalized_key = (
-            [self._char_to_number(i) for i in settings.ANONYMIZATION_NAME_KEY][i % len(settings.ANONYMIZATION_NAME_KEY)]
-            for i in range(len(normalized_value))
-        )
-
-        return ''.join([
-            v if v == ' ' else self._number_to_char(self._char_to_number(v) + int(k))
-            for k, v in zip(normalized_key, normalized_value)
-        ])
-
-
-class PhoneFieldAnonymizer(FieldAnonymizer):
-    """
-    Phone number which is anonymized with HC method. To the phone number without calling code, numeric key is added.
-    """
-
-    ignore_empty_values = True
-
-    def get_encrypted_value(self, value, encryption_key):
-        return value[:4] + '{0:09}'.format((int(value[4:]) + settings.ANONYMIZATION_PHONE_KEY) % 1000000000)
 
 
 class PersonalIIDFieldAnonymizer(FieldAnonymizer):
@@ -99,6 +58,7 @@ class PersonalIIDFieldAnonymizer(FieldAnonymizer):
     """
 
     empty_values = [None, '']
+    is_reversible = False
 
     def get_encrypted_value(self, value, encryption_key):
         max_control_number_digits = 4 if len(value) == 10 else 3
@@ -117,6 +77,7 @@ class IDCardDataFieldAnonymizer(FieldAnonymizer):
     """
 
     empty_values = [None, '']
+    is_reversible = False
 
     def get_encrypted_value(self, value, encryption_key):
         return str(int(hashlib.md5(value.encode('utf-8')).hexdigest(), 16))[:9]
@@ -126,6 +87,8 @@ class DummyFileAnonymizer(FieldAnonymizer):
     """
     File anonymizer that replaces file with a anonymized variant.
     """
+
+    is_reversible = False
 
     def __init__(self, file_path, *args, **kwargs):
         super().__init__(*args, **kwargs)
