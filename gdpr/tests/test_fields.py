@@ -1,5 +1,4 @@
 from decimal import Decimal
-from unittest import mock
 
 from django.test import TestCase
 from django.utils import timezone
@@ -26,6 +25,30 @@ class TestCharField(TestCase):
         out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
 
         self.assertEqual(out_decrypt, name)
+
+    def test_char_field_transliteration(self):
+        name = 'François'
+        fixed_name = 'Francois'
+        field = CharFieldAnonymizer(transliterate=True)
+        out = field.get_encrypted_value(name, self.encryption_key)
+
+        self.assertNotEqual(out, name)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+
+        self.assertEqual(out_decrypt, fixed_name)
+
+    def test_char_field_transliteration_full_czech(self):
+        text = 'Příliš žluťoučký kůň úpěl ďábelské ódy'
+        fixed_text = 'Prilis zlutoucky kun upel dabelske ody'
+        field = CharFieldAnonymizer(transliterate=True)
+        out = field.get_encrypted_value(text, self.encryption_key)
+
+        self.assertNotEqual(out, text)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+
+        self.assertEqual(out_decrypt, fixed_text)
 
 
 class TestEmailField(TestCase):

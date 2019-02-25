@@ -1,14 +1,13 @@
-import re
-from collections import namedtuple
 from datetime import timedelta
 from decimal import Decimal
 from typing import Any, Callable, Optional, Union
 
 from django.core.exceptions import ImproperlyConfigured
+from unidecode import unidecode
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
 from gdpr.encryption import (
-    NUMBERS, decrypt_email, decrypt_message, encrypt_email, encrypt_message, numerize_key, translate_IBAN,
+    decrypt_email, decrypt_message, encrypt_email, encrypt_message, numerize_key, translate_IBAN,
     translate_message
 )
 from gdpr.ipcypher import decrypt_ip, encrypt_ip
@@ -94,10 +93,18 @@ class CharFieldAnonymizer(FieldAnonymizer):
     """
     Anonymization for CharField.
 
+    transliterate - The CharFieldAnonymizer encrypts only ASCII chars and non-ascii chars are left the same e.g.:
+    `François` -> `rbTTç]3d` if True the original text is transliterated e.g. `François` -> 'Francois' -> `rbTTQ9Zg`.
     """
 
+    transliterate = False
+
+    def __init__(self, *args, transliterate: bool = False, **kwargs):
+        self.transliterate = transliterate
+        super().__init__(*args, **kwargs)
+
     def get_encrypted_value(self, value, encryption_key: str):
-        return encrypt_message(encryption_key, value)
+        return encrypt_message(encryption_key, value if not self.transliterate else unidecode(value))
 
     def get_decrypted_value(self, value, encryption_key: str):
         return decrypt_message(encryption_key, value)
