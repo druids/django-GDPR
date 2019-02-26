@@ -4,7 +4,7 @@ from typing import Any, Optional, Tuple, Union
 from django.core.exceptions import ValidationError
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
-from gdpr.encryption import NUMBERS, decrypt_text, encrypt_text
+from gdpr.encryption import NUMBERS, decrypt_text, encrypt_text, LETTERS_UPPER
 
 
 class CzechAccountNumber:
@@ -21,7 +21,7 @@ class CzechAccountNumber:
         self.bank = int(bank)
         self.bank_len = bank_len
         self.pre_num_len = pre_num_len
-        self.pre_num = int(pre_num) if pre_num else None
+        self.pre_num = int(pre_num) if pre_num is not None and pre_num != 0 else None
 
     def check_account_format(self) -> bool:
         pre_num = "%06d" % (self.pre_num or 0)
@@ -111,18 +111,23 @@ class CzechIBAN(CzechAccountNumber):
             value)
 
         if account:
-            control_code = int(account.group('control_code'))
-            bank_code = int(account.group('bank_code'))
-            pre_num = int(account.group('pre_num').replace(' ', ''))
-            num = int(account.group('num').replace(' ', ''))
+            control_code = account.group('control_code').upper()
+            bank_code = account.group('bank_code').upper()
+            pre_num = account.group('pre_num').replace(' ', '').upper()
+            num = account.group('num').replace(' ', '').upper()
 
-            return cls(
-                control_code=control_code, has_spaces=' ' in value,
-                pre_num=pre_num, num=num, bank=bank_code)
+            if all([all([i in (LETTERS_UPPER + NUMBERS) for i in control_code]),
+                    all([i in NUMBERS for i in bank_code]),
+                    all([i in NUMBERS for i in pre_num]),
+                    all([i in NUMBERS for i in num])]):
+
+                return cls(
+                    control_code=int(control_code), has_spaces=' ' in value,
+                    pre_num=int(pre_num), num=int(num), bank=int(bank_code))
         raise ValidationError(f'IBAN \'{value}\' does not appear to be czech IBAN.')
 
     def _to_str(self, spaces: Optional[bool] = None):
-        pre_num = str(self.pre_num).rjust(6, '0')
+        pre_num = str(self.pre_num or 0).rjust(6, '0')
         num = str(self.num).rjust(10, '0')
         out = (f'CZ{str(self.control_code).rjust(2, "0")} {str(self.bank).rjust(4, "0")} {pre_num[:4]} '
                f'{pre_num[4:]}{num[:2]} {num[2:6]} {num[6:]}')

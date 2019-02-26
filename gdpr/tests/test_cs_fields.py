@@ -80,6 +80,7 @@ class TestCzechIBANSmartFieldAnonymizer(TestCase):
         cls.text_iban = 'CZ65 0800 0000 1920 0014 5399'
         cls.no_space_text_iban = 'CZ6508000000192000145399'
         cls.invalid_text_iban = 'CZ00 0800 0000 1920 0014 5399'
+        cls.no_pre_num_iban = 'CZ4601000000000099550247'
 
     def test_czech_iban_field(self):
         out = self.field.get_encrypted_value(self.text_iban, self.encryption_key)
@@ -113,6 +114,9 @@ class TestCzechIBANSmartFieldAnonymizer(TestCase):
 
     def test_czech_iban_check_format_invalid(self):
         self.assertFalse(CzechIBAN.parse(self.invalid_text_iban).check_iban_format())
+
+    def test_czech_iban_check_format_no_pre_num(self):
+        self.assertTrue(CzechIBAN.parse(self.no_pre_num_iban).check_iban_format())
 
     def test_brute_force(self):
         account = CzechIBAN.parse(self.text_iban)
