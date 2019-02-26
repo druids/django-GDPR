@@ -3,7 +3,7 @@ from django.test import TestCase
 
 from gdpr.anonymizers.local.cs import (
     CzechAccountNumber, CzechAccountNumberFieldAnonymizer, CzechIBAN, CzechIBANSmartFieldAnonymizer,
-    CzechPhoneNumberFieldAnonymizer, CzechIDCardFieldAnonymizer)
+    CzechPhoneNumberFieldAnonymizer, CzechIDCardFieldAnonymizer, CzechPersonalIDSmartFieldAnonymizer)
 
 
 class TestCzechAccountNumberField(TestCase):
@@ -180,3 +180,37 @@ class TestCzechIDCardFieldAnonymizer(TestCase):
 
         out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
         self.assertEqual(id_card, out_decrypt)
+
+
+class TestCzechPersonalIDSmartFieldAnonymizer(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.field = CzechPersonalIDSmartFieldAnonymizer()
+        cls.encryption_key = 'LoremIpsumDolorSitAmet'
+
+    def test_czech_personal_id_smart_field_anonymizer(self):
+        personal_id = "740104/0020"
+
+        out = self.field.get_encrypted_value(personal_id, self.encryption_key)
+        self.assertNotEqual(personal_id, out)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+        self.assertEqual(personal_id, out_decrypt)
+
+    def test_czech_personal_id_smart_field_anonymizer_no_slash(self):
+        personal_id = "7401040020"
+
+        out = self.field.get_encrypted_value(personal_id, self.encryption_key)
+        self.assertNotEqual(personal_id, out)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+        self.assertEqual(personal_id, out_decrypt)
+
+    def test_czech_personal_id_smart_field_anonymizer_1954_change(self):
+        personal_id = "540101/0021"
+
+        out = self.field.get_encrypted_value(personal_id, self.encryption_key)
+        self.assertNotEqual(personal_id, out)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+        self.assertEqual(personal_id, out_decrypt)
