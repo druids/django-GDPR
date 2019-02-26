@@ -14,6 +14,8 @@ class CzechAccountNumber:
     num_len: int = 10
     bank: int
 
+    CZECH_ACCOUNT_RE = re.compile('((?P<pre_num>[0-9]{0,6})-)?(?P<num>[0-9]{1,10})/(?P<bank_code>[0-9]{4})')
+
     def __init__(self, num: Union[int, str], bank: Union[int, str], pre_num: Optional[Union[int, str]] = None,
                  num_len: int = 10, pre_num_len: Optional[int] = None, bank_len: int = 4):
         self.num = int(num)
@@ -68,7 +70,7 @@ class CzechAccountNumber:
         :param value:
         :return: AccountNumber(predcisli)-(cislo)/(kod_banky)
         """
-        account = re.match('((?P<pre_num>[0-9]{0,6})-)?(?P<num>[0-9]{1,10})/(?P<bank_code>[0-9]{4})', value)
+        account = re.match(cls.CZECH_ACCOUNT_RE, value)
         if account:
             pre_num = account.group('pre_num')
             num = account.group('num')
@@ -86,6 +88,10 @@ class CzechAccountNumber:
 class CzechIBAN(CzechAccountNumber):
     has_spaces = False
     control_code: int
+    CZECH_IBAN_RE = re.compile(
+        'CZ(?P<control_code>[0-9]{2}) ?(?P<bank_code>[0-9]{4}) ?'
+        '(?P<pre_num>[0-9]{4} ?[0-9]{2})(?P<num>[0-9]{2} ?[0-9]{4} ?[0-9]{4})',
+    )
 
     def __init__(self, *args, has_spaces: bool = False, control_code: Optional[int] = None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -105,10 +111,7 @@ class CzechIBAN(CzechAccountNumber):
         :param value:
         :return: AccountNumber(predcisli)-(cislo)/(kod_banky)
         """
-        account = re.match(
-            'CZ(?P<control_code>[0-9]{2}) ?(?P<bank_code>[0-9]{4}) ?'
-            '(?P<pre_num>[0-9]{4} ?[0-9]{2})(?P<num>[0-9]{2} ?[0-9]{4} ?[0-9]{4})',
-            value)
+        account = re.match(cls.CZECH_IBAN_RE, value)
 
         if account:
             control_code = account.group('control_code').upper()
