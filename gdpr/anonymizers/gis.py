@@ -1,5 +1,6 @@
 """Since django 1.11 djnago-GIS requires GDAL."""
 import logging
+from typing import Optional
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -25,24 +26,38 @@ class GISPointFieldAnonymizer(NumericFieldAnonymizer):
     Anonymizer for PointField from django-gis.
     """
 
+    max_x_range: int
+    max_y_range: int
+
+    def __init__(self, max_x_range: Optional[int] = None, max_y_range: Optional[int] = None, *args, **kwargs):
+        if max_x_range is not None:
+            self.max_x_range = max_x_range
+        elif self.max_x_range is None:
+            raise ImproperlyConfigured(f'{self.__class__} does not have `max_x_range`.')
+        if max_y_range is not None:
+            self.max_y_range = max_y_range
+        elif self.max_y_range is None:
+            raise ImproperlyConfigured(f'{self.__class__} does not have `max_y_range`.')
+        super().__init__(*args, **kwargs)
+
     def get_encrypted_value(self, value, encryption_key: str):
         if not is_gis_installed():
             raise ImproperlyConfigured('Unable to load django GIS.')
         from django.contrib.gis.geos import Point
 
-        new_value: Point = Point(value.tuple)
-        new_value.x += self.get_numeric_encryption_key(encryption_key, int(new_value.x))
-        new_value.y += self.get_numeric_encryption_key(encryption_key, int(new_value.y))
+        new_val: Point = Point(value.tuple)
+        new_val.x = (new_val.x + self.get_numeric_encryption_key(encryption_key, int(new_val.x))) % self.max_x_range
+        new_val.y = (new_val.y + self.get_numeric_encryption_key(encryption_key, int(new_val.y))) % self.max_y_range
 
-        return new_value
+        return new_val
 
     def get_decrypted_value(self, value, encryption_key: str):
         if not is_gis_installed():
             raise ImproperlyConfigured('Unable to load django GIS.')
         from django.contrib.gis.geos import Point
 
-        new_value: Point = Point(value.tuple)
-        new_value.x -= self.get_numeric_encryption_key(encryption_key, int(new_value.x))
-        new_value.y -= self.get_numeric_encryption_key(encryption_key, int(new_value.y))
+        new_val: Point = Point(value.tuple)
+        new_val.x = (new_val.x - self.get_numeric_encryption_key(encryption_key, int(new_val.x))) % self.max_x_range
+        new_val.y = (new_val.y - self.get_numeric_encryption_key(encryption_key, int(new_val.y))) % self.max_y_range
 
-        return new_value
+        return new_val

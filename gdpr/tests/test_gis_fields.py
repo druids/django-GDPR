@@ -9,7 +9,7 @@ from gdpr.anonymizers.gis import is_gis_installed
 class TestGISPointFieldAnonymizer(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.field = GISPointFieldAnonymizer()
+        cls.field = GISPointFieldAnonymizer(max_x_range=100, max_y_range=100)
         cls.encryption_key = 'LoremIpsumDolorSitAmet'
 
     @skipIf(not is_gis_installed(), 'Django GIS not available.')
