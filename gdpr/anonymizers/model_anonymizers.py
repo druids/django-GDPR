@@ -224,9 +224,12 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     @staticmethod
     def _perform_version_update(model: Type[Model], version, update_data):
         from reversion import revisions
-        version_dict_local = dict(version.field_dict)
-        version_dict_local.update(update_data)
-        local_obj = model(**version_dict_local)
+        if hasattr(version, "object_version"):
+            local_obj = version.object_version.object
+        else:
+            local_obj = version._object_version.object
+        for field, value in update_data.items():
+            setattr(local_obj, field, value)
         if hasattr(revisions, '_get_options'):
             version_options = revisions._get_options(model)
             version_format = version_options.format
