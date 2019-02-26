@@ -51,23 +51,33 @@ class FieldAnonymizer:
             return value
         return self.get_encrypted_value(value, encryption_key)
 
-    def get_anonymized_value_from_obj(self, obj, name: str, encryption_key: str):
-        return self._get_anonymized_value_from_value(getattr(obj, name), encryption_key)
-
-    def get_anonymized_value_from_version(self, obj, version, name: str, encryption_key: str):
-        return self._get_anonymized_value_from_value(version.field_dict[name], encryption_key)
-
     def _get_deanonymized_value_from_value(self, obj, value, encryption_key: str):
         if self.get_is_reversible(obj, raise_exception=True):
             if self._ignore_empty_values and value in self._empty_values:
                 return value
             return self.get_decrypted_value(value, encryption_key)
 
-    def get_deanonymized_value_from_obj(self, obj, name: str, encryption_key: str):
+    def get_value_from_obj(self, obj, name: str, encryption_key: str, anonymization: bool = True):
+        if anonymization:
+            return self._get_anonymized_value_from_value(getattr(obj, name), encryption_key)
         return self._get_deanonymized_value_from_value(obj, getattr(obj, name), encryption_key)
 
-    def get_deanonymized_value_from_version(self, obj, version, name: str, encryption_key: str):
+    def get_value_from_version(self, obj, version, name: str, encryption_key: str, anonymization: bool = True):
+        if anonymization:
+            return self._get_anonymized_value_from_value(version.field_dict[name], encryption_key)
         return self._get_deanonymized_value_from_value(obj, version.field_dict[name], encryption_key)
+
+    def get_anonymized_value_from_obj(self, obj, name: str, encryption_key: str):
+        return self.get_value_from_obj(obj, name, encryption_key, anonymization=True)
+
+    def get_deanonymized_value_from_obj(self, obj, name: str, encryption_key: str):
+        return self.get_value_from_obj(obj, name, encryption_key, anonymization=False)
+
+    def get_anonymized_value_from_version(self, obj, version, name: str, encryption_key: str):
+        return self.get_value_from_version(obj, version, name, encryption_key, anonymization=True)
+
+    def get_deanonymized_value_from_version(self, obj, version, name: str, encryption_key: str):
+        return self.get_value_from_version(obj, version, name, encryption_key, anonymization=False)
 
     def get_anonymized_value(self, value: Any) -> Any:
         """

@@ -106,19 +106,22 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
             value=PAYMENT__VALUE,
         )
         self.payment.save()
+        payment_date = self.payment.date
+
         self.payment._anonymize_obj(base_encryption_key=self.base_encryption_key)
 
         anon_payment: Payment = Payment.objects.get(pk=self.payment.pk)
 
         self.assertNotEquals(anon_payment.value, PAYMENT__VALUE)
         self.assertAnonymizedDataExists(anon_payment, "value")
-        self.assertNotEquals(anon_payment.date, self.payment.date)
+        self.assertNotEquals(anon_payment.date, payment_date)
         self.assertAnonymizedDataExists(anon_payment, "date")
 
     def test_contact_form(self):
+        FULL_NAME = "%s %s" % (CUSTOMER__FIRST_NAME, CUSTOMER__LAST_NAME)
         self.contact_form: ContactForm = ContactForm(
             email=CUSTOMER__EMAIL,
-            full_name="%s %s" % (CUSTOMER__FIRST_NAME, CUSTOMER__LAST_NAME)
+            full_name=FULL_NAME
         )
         self.contact_form.save()
         self.contact_form._anonymize_obj()
@@ -127,7 +130,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         self.assertNotEqual(anon_contact_form.email, CUSTOMER__EMAIL)
         self.assertAnonymizedDataExists(anon_contact_form, "email")
-        self.assertNotEqual(anon_contact_form.full_name, self.contact_form.full_name)
+        self.assertNotEqual(anon_contact_form.full_name, FULL_NAME)
         self.assertAnonymizedDataExists(anon_contact_form, "full_name")
 
     def test_anonymization_of_anonymized_data(self):
