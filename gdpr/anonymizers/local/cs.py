@@ -120,7 +120,6 @@ class CzechIBAN(CzechAccountNumber):
                     all([i in NUMBERS for i in bank_code]),
                     all([i in NUMBERS for i in pre_num]),
                     all([i in NUMBERS for i in num])]):
-
                 return cls(
                     control_code=int(control_code), has_spaces=' ' in value,
                     pre_num=int(pre_num), num=int(num), bank=int(bank_code))
@@ -245,3 +244,11 @@ class CzechPhoneNumberFieldAnonymizer(FieldAnonymizer):
         area_code, phone_number = self.split_phone_number(value)
         encrypted_phone_number = decrypt_text(encryption_key, phone_number[3:], NUMBERS)
         return f'{area_code}{phone_number[:3]}{encrypted_phone_number}'
+
+
+class CzechIDCardFieldAnonymizer(FieldAnonymizer):
+    def get_encrypted_value(self, value: str, encryption_key: str):
+        return f"{value[0]}{encrypt_text(encryption_key, value[1:], NUMBERS)}"
+
+    def get_decrypted_value(self, value: str, encryption_key: str):
+        return f"{value[0]}{decrypt_text(encryption_key, value[1:], NUMBERS)}"
