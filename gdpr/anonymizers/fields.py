@@ -72,9 +72,9 @@ class FunctionFieldAnonymizer(FieldAnonymizer):
             return self.deanonymize_func(self, value, encryption_key)  # type: ignore
 
 
-class DateFieldAnonymizer(NumericFieldAnonymizer):
+class DateTimeFieldAnonymizer(NumericFieldAnonymizer):
     """
-    Anonymization for DateField.
+    Anonymization for DateTimeField.
 
     """
 
@@ -85,6 +85,21 @@ class DateFieldAnonymizer(NumericFieldAnonymizer):
 
     def get_decrypted_value(self, value, encryption_key: str):
         return value + timedelta(seconds=self.get_numeric_encryption_key(encryption_key))
+
+
+class DateFieldAnonymizer(NumericFieldAnonymizer):
+    """
+    Anonymization for DateField.
+
+    """
+
+    max_anonymization_range = 365
+
+    def get_encrypted_value(self, value, encryption_key: str):
+        return value - timedelta(days=self.get_numeric_encryption_key(encryption_key))
+
+    def get_decrypted_value(self, value, encryption_key: str):
+        return value + timedelta(days=self.get_numeric_encryption_key(encryption_key))
 
 
 class CharFieldAnonymizer(FieldAnonymizer):

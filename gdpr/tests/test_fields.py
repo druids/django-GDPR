@@ -7,7 +7,9 @@ from gdpr.anonymizers import (
     CharFieldAnonymizer, DateFieldAnonymizer, DecimalFieldAnonymizer,
     EmailFieldAnonymizer, IPAddressFieldAnonymizer, StaticValueAnonymizer
 )
-from gdpr.anonymizers.fields import FunctionFieldAnonymizer, JSONFieldAnonymizer, SiteIDUsernameFieldAnonymizer
+from gdpr.anonymizers.fields import (
+    FunctionFieldAnonymizer, JSONFieldAnonymizer, SiteIDUsernameFieldAnonymizer,
+    DateTimeFieldAnonymizer)
 
 
 class TestCharField(TestCase):
@@ -99,6 +101,23 @@ class TestDateField(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.field = DateFieldAnonymizer()
+        cls.encryption_key = 'LoremIpsumDolorSitAmet'
+
+    def test_date_field(self):
+        date = timezone.now()
+        out = self.field.get_encrypted_value(date, self.encryption_key)
+
+        self.assertNotEqual(out, date)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+
+        self.assertEqual(out_decrypt, date)
+
+
+class TestDateTimeField(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.field = DateTimeFieldAnonymizer()
         cls.encryption_key = 'LoremIpsumDolorSitAmet'
 
     def test_date_field(self):
