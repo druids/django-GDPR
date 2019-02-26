@@ -12,7 +12,6 @@ from chamber.models import SmartModel
 
 from .loading import purpose_register
 
-
 if TYPE_CHECKING:
     from gdpr.purposes.default import AbstractPurpose
 
@@ -249,7 +248,19 @@ class LegalReasonRelatedObject(SmartModel):
         unique_together = ('legal_reason', 'object_content_type', 'object_id')
 
 
+class AnonymizedDataQuerySet(models.QuerySet):
+
+    def filter_source_instance_active(self, source_object):
+        return self.filter(
+            content_type=ContentType.objects.get_for_model(source_object.__class__),
+            object_id=str(source_object.pk),
+            is_active=True
+        )
+
+
 class AnonymizedData(SmartModel):
+    objects = models.Manager.from_queryset(AnonymizedDataQuerySet)()
+
     field = models.CharField(
         verbose_name=_('anonymized field name'),
         max_length=250,
