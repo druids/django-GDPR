@@ -4,6 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model
 
 from gdpr.encryption import numerize_key
+from gdpr.utils import get_number_guess_len
 
 
 class RelationAnonymizer:
@@ -136,6 +137,4 @@ class NumericFieldAnonymizer(FieldAnonymizer):
                 raise ImproperlyConfigured(f'{self.__class__} does not have `max_anonymization_range` specified.')
             return numerize_key(encryption_key) % self.max_anonymization_range
 
-        # safety measure against key getting one bigger (overflow) on decrypt e.g. (5)=1 -> 5 + 8 = 13 -> (13)=2
-        guess_len = len(str(int(value)))
-        return numerize_key(encryption_key) % 10 ** (guess_len if guess_len % 2 != 0 else (guess_len - 1))
+        return numerize_key(encryption_key) % 10 ** get_number_guess_len(value)

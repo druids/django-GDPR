@@ -10,6 +10,19 @@ def str_to_class(class_string: str) -> Any:
     return c
 
 
+def get_number_guess_len(value):
+    """
+    Safety measure against key getting one bigger (overflow) on decrypt e.g. (5)=1 -> 5 + 8 = 13 -> (13)=2
+    Args:
+        value: Number convertible to int to get it's length
+
+    Returns:
+        The even length of the whole part of the number
+    """
+    guess_len = len(str(int(value)))
+    return guess_len if guess_len % 2 != 0 else (guess_len - 1)
+
+
 """
 Enable support for druids reversion fork
 """

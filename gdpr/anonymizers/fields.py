@@ -11,6 +11,7 @@ from gdpr.encryption import (
     translate_text
 )
 from gdpr.ipcypher import decrypt_ip, encrypt_ip
+from gdpr.utils import get_number_guess_len
 
 
 class FunctionFieldAnonymizer(FieldAnonymizer):
@@ -181,9 +182,7 @@ class JSONFieldAnonymizer(FieldAnonymizer):
     def get_numeric_encryption_key(self, encryption_key: str, value: Union[int, float] = None) -> int:
         if value is None:
             return numerize_key(encryption_key)
-        # safety measure against key getting one bigger (overflow) on decrypt e.g. (5)=1 -> 5 + 8 = 13 -> (13)=2
-        guess_len = len(str(int(value)))
-        return numerize_key(encryption_key) % 10 ** (guess_len if guess_len % 2 != 0 else (guess_len - 1))
+        return numerize_key(encryption_key) % 10 ** get_number_guess_len(value)
 
     def anonymize_json_value(self, value: Union[list, dict, bool, None, str, int, float],
                              encryption_key: str,
