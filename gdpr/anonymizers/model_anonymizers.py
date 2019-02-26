@@ -153,7 +153,7 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
             raise NotImplementedError(f'Relation {str(field)} not supported yet.')
 
     def mark_field_as_anonymized(self, obj: Model, name: str, legal_reason: Optional[LegalReason] = None):
-        AnonymizedData(object=obj, field=name, expired_reason=legal_reason).save()
+        AnonymizedData.objects.create(object=obj, field=name, expired_reason=legal_reason)
 
     def unmark_field_as_anonymized(self, obj: Model, name: str):
         AnonymizedData.objects.filter(
