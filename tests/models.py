@@ -15,6 +15,7 @@ from django.utils.translation import gettext_lazy as _
 
 from gdpr.mixins import AnonymizationModel
 from gdpr.utils import is_reversion_installed
+from tests.validators import CZBirthNumberValidator, BankAccountValidator
 
 
 class Customer(AnonymizationModel):
@@ -25,7 +26,7 @@ class Customer(AnonymizationModel):
 
     full_name = models.CharField(max_length=256, blank=True, null=True)
     birth_date = models.DateField(blank=True, null=True)
-    personal_id = models.CharField(max_length=10, blank=True, null=True)  # Rodne cislo
+    personal_id = models.CharField(max_length=10, blank=True, null=True, validators=[CZBirthNumberValidator])
     phone_number = models.CharField(max_length=9, blank=True, null=True)
     facebook_id = models.CharField(
         max_length=256, blank=True, null=True,
@@ -60,7 +61,7 @@ class Address(AnonymizationModel):
 
 class Account(AnonymizationModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="accounts")
-    number = models.CharField(max_length=256, blank=True, null=True)
+    number = models.CharField(max_length=256, blank=True, null=True, validators=[BankAccountValidator])
     IBAN = models.CharField(max_length=34, blank=True, null=True)
     swift = models.CharField(max_length=11, blank=True, null=True)
     owner = models.CharField(max_length=256, blank=True, null=True)
