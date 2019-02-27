@@ -199,12 +199,6 @@ class LegalReason(SmartModel):
     def __str__(self):
         return f'{self.purpose.name}'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # To avoid circular import during models import
-        self._meta.get_field('purpose_slug').choices = list(
-            ((purpose_slug, purpose_class.name) for purpose_slug, purpose_class in purpose_register.items()))
-
     class Meta:
         verbose_name = _('legal reason')
         verbose_name_plural = _('legal reasons')
