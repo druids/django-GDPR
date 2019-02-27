@@ -75,13 +75,15 @@ class CzechAccountNumber:
         :return: AccountNumber(predcisli)-(cislo)/(kod_banky)
         """
         account = re.match(cls.CZECH_ACCOUNT_RE, value)
-        if account:
-            pre_num = account.group('pre_num')
-            num = account.group('num')
-            bank_code = account.group('bank_code')
-            return cls(pre_num=pre_num, pre_num_len=len(pre_num or ""), num=num, num_len=len(num),
-                       bank=bank_code, bank_len=len(bank_code))
-        raise ValidationError(f'Str \'{value}\' does not appear to be czech account number.')
+
+        if account is None:
+            raise ValidationError(f'Str \'{value}\' does not appear to be czech account number.')
+
+        pre_num = account.group('pre_num')
+        num = account.group('num')
+        bank_code = account.group('bank_code')
+        return cls(pre_num=pre_num, pre_num_len=len(pre_num or ""), num=num, num_len=len(num),
+                   bank=bank_code, bank_len=len(bank_code))
 
     def __str__(self):
         return ((f'{str(self.pre_num).rjust(self.pre_num_len, "0") if self.pre_num_len else self.pre_num}-'
@@ -130,6 +132,7 @@ class CzechIBAN(CzechAccountNumber):
                 return cls(
                     control_code=int(control_code), has_spaces=' ' in value,
                     pre_num=int(pre_num), num=int(num), bank=int(bank_code))
+
         raise ValidationError(f'IBAN \'{value}\' does not appear to be czech IBAN.')
 
     def _to_str(self, spaces: Optional[bool] = None):
@@ -179,19 +182,19 @@ class CzechIBAN(CzechAccountNumber):
 
 class CzechPersonalID:
     date: datetime.date
-    is_male: bool
-    is_extra: bool = False
     day_index: int
     control_number: Optional[int] = None
+
     day_offset: bool = False
+    is_male: bool
+    is_extra: bool = False
     has_slash: bool = True
 
     CZECH_PERSONAL_ID_RE = re.compile(
         r'^(?P<year>\d{2})(?P<month>\d{2})(?P<day>\d{2})/?(?P<day_index>\d{3})(?P<key>\d)?$')
 
     def __init__(self, date: datetime.date, is_male: bool, day_index: int, control_number: Optional[int] = None,
-                 is_extra: bool = False,
-                 day_offset: bool = False, has_slash: bool = True):
+                 is_extra: bool = False, day_offset: bool = False, has_slash: bool = True):
         """
 
         Args:
@@ -231,40 +234,41 @@ class CzechPersonalID:
     def parse(cls, value) -> "CzechPersonalID":
         personal_id = re.match(cls.CZECH_PERSONAL_ID_RE, value)
 
-        if personal_id:
-            year = int(personal_id.group('year'))
-            month = int(personal_id.group('month'))
-            day = int(personal_id.group('day'))
-            day_index = int(personal_id.group('day_index'))
-            key = int(personal_id.group('key')) if personal_id.group('key') is not None else None
+        if personal_id is None:
+            raise ValidationError(f'Str \'{value}\' does not appear to be czech personal id.')
 
-            pre_1954 = len(value.replace('/', '')) == 9
-            is_male = month < 50
-            is_extra = month > 12 if is_male else month > 62
-            is_day_offset = day > 50
-            full_year = (2000 if year < 54 and not pre_1954 else 1900) + year
-            if is_male and is_extra and full_year > 2003:
-                month -= 20
-            elif not is_male and is_extra and full_year > 2003:
-                month -= 70
-            elif not is_male:
-                month -= 50
-            if not (1 <= month <= 12):
-                raise ValidationError(f'Str \'{value}\' does not appear to be czech personal id.')
+        year = int(personal_id.group('year'))
+        month = int(personal_id.group('month'))
+        day = int(personal_id.group('day'))
+        day_index = int(personal_id.group('day_index'))
+        key = int(personal_id.group('key')) if personal_id.group('key') is not None else None
 
-            if day > 50:
-                day -= 50
+        pre_1954 = len(value.replace('/', '')) == 9
+        is_male = month < 50
+        is_extra = month > 12 if is_male else month > 62
+        is_day_offset = day > 50
+        full_year = (2000 if year < 54 and not pre_1954 else 1900) + year
+        if is_male and is_extra and full_year > 2003:
+            month -= 20
+        elif not is_male and is_extra and full_year > 2003:
+            month -= 70
+        elif not is_male:
+            month -= 50
+        if not (1 <= month <= 12):
+            raise ValidationError(f'Str \'{value}\' does not appear to be czech personal id.')
 
-            return cls(
-                date=datetime.date(year=full_year, month=month, day=day),
-                is_male=is_male,
-                day_index=day_index,
-                control_number=key,
-                is_extra=is_extra,
-                day_offset=is_day_offset,
-                has_slash='/' in value,
-            )
-        raise ValidationError(f'Str \'{value}\' does not appear to be czech personal id.')
+        if is_day_offset:
+            day -= 50
+
+        return cls(
+            date=datetime.date(year=full_year, month=month, day=day),
+            is_male=is_male,
+            day_index=day_index,
+            control_number=key,
+            is_extra=is_extra,
+            day_offset=is_day_offset,
+            has_slash='/' in value,
+        )
 
     def check_format(self):
 
