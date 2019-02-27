@@ -4,17 +4,13 @@ from .fields import (
     StaticValueAnonymizer)
 from .generic_relation import GenericRelationAnonymizer, ReverseGenericRelationAnonymizer
 from .hash_fields import HashTextFieldAnonymizer, MD5TextFieldAnonymizer, SHA256TextFieldAnonymizer
-from .legacy_fields import (
-    DummyFileAnonymizer, IDCardDataFieldAnonymizer,
-    PersonalIIDFieldAnonymizer, UsernameFieldAnonymizer
-)
+from .legacy_fields import DummyFileAnonymizer
 from .model_anonymizers import DeleteModelAnonymizer, ModelAnonymizer
 
 __all__ = (
     'ModelAnonymizer', 'DeleteModelAnonymizer', 'FunctionFieldAnonymizer', 'DateFieldAnonymizer', 'CharFieldAnonymizer',
     'DecimalFieldAnonymizer', 'IPAddressFieldAnonymizer', 'StaticValueAnonymizer',
-    'MD5TextFieldAnonymizer', 'EmailFieldAnonymizer', 'UsernameFieldAnonymizer',
-    'PersonalIIDFieldAnonymizer', 'IDCardDataFieldAnonymizer', 'DummyFileAnonymizer',
+    'MD5TextFieldAnonymizer', 'EmailFieldAnonymizer', 'DummyFileAnonymizer',
     'ReverseGenericRelationAnonymizer', 'SHA256TextFieldAnonymizer',
     'HashTextFieldAnonymizer', 'GenericRelationAnonymizer', 'IBANFieldAnonymizer', 'SiteIDUsernameFieldAnonymizer',
     'DateTimeFieldAnonymizer',
