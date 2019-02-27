@@ -29,8 +29,9 @@ def check_uniqueness_and_keep_latest_active_legal_reason(apps, schema_editor):
         lr_count=Count('purpose_slug')).filter(lr_count__gt=1).order_by('-lr_count').distinct()
 
     for legal_reason in tqdm(check_qs.all()):
-        remove_duplicate_legal_reasons(apps, legal_reason['purpose_slug'], legal_reason['source_object_content_type'],
-                                       legal_reason['source_object_id']
+        remove_duplicate_legal_reasons(
+            apps, legal_reason['purpose_slug'], legal_reason['source_object_content_type'],
+            legal_reason['source_object_id']
         )
 
 

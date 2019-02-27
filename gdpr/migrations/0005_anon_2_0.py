@@ -9,7 +9,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
     dependencies = [
         ('contenttypes', '0002_remove_content_type_name'),
-        ('gdpr', '0003'),
+        ('gdpr', '0004'),
     ]
 
     operations = [
