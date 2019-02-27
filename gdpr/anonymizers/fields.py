@@ -141,11 +141,14 @@ class DecimalFieldAnonymizer(NumericFieldAnonymizer):
     max_anonymization_range = 10000
     decimal_places: int = 2
 
+    def get_offset(self, encryption_key: str):
+        return Decimal(self.get_numeric_encryption_key(encryption_key)) / Decimal(10 ** self.decimal_places)
+
     def get_encrypted_value(self, value, encryption_key: str):
-        return value + Decimal(self.get_numeric_encryption_key(encryption_key)) / Decimal(10 ** self.decimal_places)
+        return value + self.get_offset(encryption_key)
 
     def get_decrypted_value(self, value, encryption_key: str):
-        return value - Decimal(self.get_numeric_encryption_key(encryption_key)) / Decimal(10 ** self.decimal_places)
+        return value - self.get_offset(encryption_key)
 
 
 class IPAddressFieldAnonymizer(FieldAnonymizer):
