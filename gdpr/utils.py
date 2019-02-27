@@ -1,4 +1,7 @@
-from typing import Any
+from typing import Any, Type
+
+from django.core.exceptions import FieldDoesNotExist
+from django.db.models import Model
 
 
 def str_to_class(class_string: str) -> Any:
@@ -21,6 +24,24 @@ def get_number_guess_len(value):
     """
     guess_len = len(str(int(value)))
     return guess_len if guess_len % 2 != 0 else (guess_len - 1)
+
+
+def get_field_or_none(model: Type[Model], field_name: str):
+    """
+    Use django's _meta field api to get field or return None.
+
+    Args:
+        model: The model to get the field on
+        field_name: The name of the field
+
+    Returns:
+        The field or None
+
+    """
+    try:
+        return model._meta.get_field(field_name)
+    except FieldDoesNotExist:
+        return None
 
 
 """
