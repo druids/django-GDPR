@@ -40,8 +40,8 @@ class AddressAnonymizer(anonymizers.ModelAnonymizer):
 
 
 class AccountAnonymizer(anonymizers.ModelAnonymizer):
-    number = cs.CzechAccountNumberFieldAnonymizer()
-    IBAN = anonymizers.IBANFieldAnonymizer()
+    number = cs.CzechAccountNumberFieldAnonymizer(use_smart_method=True)
+    IBAN = cs.CzechIBANSmartFieldAnonymizer()
     owner = anonymizers.CharFieldAnonymizer()
 
     class Meta:

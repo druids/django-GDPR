@@ -215,7 +215,7 @@ class JSONFieldAnonymizer(FieldAnonymizer):
         return self.anonymize_json_value(value, encryption_key, anonymize=False)
 
 
-class StaticValueAnonymizer(FieldAnonymizer):
+class StaticValueFieldAnonymizer(FieldAnonymizer):
     """
     Static value anonymizer replaces value with defined static value.
     """

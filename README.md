@@ -188,4 +188,4 @@ LegalReason.objects.expire_old_consents()
 * `MD5TextFieldAnonymizer`
 * `SHA256TextFieldAnonymizer`
 * `HashTextFieldAnonymizer` - anonymization using given hash algorithm (e.g. `secret_code = anonymizers.HashTextFieldAnonymizer('sha512')`)
-* `StaticValueAnonymizer` - anonymization by replacing with static value (e.g. `secret_code = anonymizers.StaticValueAnonymizer(42)`)
+* `StaticValueFieldAnonymizer` - anonymization by replacing with static value (e.g. `secret_code = anonymizers.StaticValueFieldAnonymizer(42)`)
