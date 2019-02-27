@@ -2,14 +2,13 @@ from unittest import skipIf
 
 from django.test import TestCase
 
-from gdpr.anonymizers import GISPointFieldAnonymizer
-from gdpr.anonymizers.gis import is_gis_installed
+from gdpr.anonymizers.gis import is_gis_installed, ExperimentalGISPointFieldAnonymizer
 
 
 class TestGISPointFieldAnonymizer(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.field = GISPointFieldAnonymizer(max_x_range=100, max_y_range=100)
+        cls.field = ExperimentalGISPointFieldAnonymizer(max_x_range=100, max_y_range=100)
         cls.encryption_key = 'LoremIpsumDolorSitAmet'
 
     @skipIf(not is_gis_installed(), 'Django GIS not available.')

@@ -21,9 +21,13 @@ if not is_gis_installed():
     logger.warning('Unable to load django GIS. GIS anonymization disabled.')
 
 
-class GISPointFieldAnonymizer(NumericFieldAnonymizer):
+class ExperimentalGISPointFieldAnonymizer(NumericFieldAnonymizer):
     """
     Anonymizer for PointField from django-gis.
+
+    Warnings:
+        May not fully work. Currently works only on positive coordinates.
+        With ``max_x_range`` and ``max_y_range`` specified. Also anonymization occurs only on the whole part.
     """
 
     max_x_range: int
