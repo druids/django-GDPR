@@ -4,12 +4,12 @@ from django.test import TestCase
 from django.utils import timezone
 
 from gdpr.anonymizers import (
-    CharFieldAnonymizer, DateFieldAnonymizer, DecimalFieldAnonymizer,
-    EmailFieldAnonymizer, IPAddressFieldAnonymizer, StaticValueFieldAnonymizer
+    CharFieldAnonymizer, DateFieldAnonymizer, DecimalFieldAnonymizer, EmailFieldAnonymizer, IPAddressFieldAnonymizer,
+    StaticValueFieldAnonymizer
 )
 from gdpr.anonymizers.fields import (
-    FunctionFieldAnonymizer, JSONFieldAnonymizer, SiteIDUsernameFieldAnonymizer,
-    DateTimeFieldAnonymizer)
+    DateTimeFieldAnonymizer, FunctionFieldAnonymizer, JSONFieldAnonymizer, SiteIDUsernameFieldAnonymizer
+)
 
 
 class TestCharField(TestCase):

@@ -3,7 +3,8 @@ from django.test import TestCase
 
 from gdpr.anonymizers.local.cs import (
     CzechAccountNumber, CzechAccountNumberFieldAnonymizer, CzechIBAN, CzechIBANSmartFieldAnonymizer,
-    CzechPhoneNumberFieldAnonymizer, CzechIDCardFieldAnonymizer, CzechPersonalIDSmartFieldAnonymizer)
+    CzechIDCardFieldAnonymizer, CzechPersonalIDSmartFieldAnonymizer, CzechPhoneNumberFieldAnonymizer
+)
 
 
 class TestCzechAccountNumberField(TestCase):

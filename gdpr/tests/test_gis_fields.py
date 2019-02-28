@@ -2,7 +2,7 @@ from unittest import skipIf
 
 from django.test import TestCase
 
-from gdpr.anonymizers.gis import is_gis_installed, ExperimentalGISPointFieldAnonymizer
+from gdpr.anonymizers.gis import ExperimentalGISPointFieldAnonymizer, is_gis_installed
 
 
 class TestGISPointFieldAnonymizer(TestCase):

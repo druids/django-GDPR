@@ -3,8 +3,7 @@ import random
 import string
 import warnings
 from typing import (
-    TYPE_CHECKING, Any, Dict, ItemsView, Iterator, KeysView, List, Optional, Tuple, Type, Union, ValuesView
-)
+    Any, Dict, ItemsView, Iterator, KeysView, List, Optional, TYPE_CHECKING, Tuple, Type, Union, ValuesView)
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType

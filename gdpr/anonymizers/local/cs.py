@@ -5,7 +5,7 @@ from typing import Any, Optional, Tuple, Union
 from django.core.exceptions import ValidationError
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
-from gdpr.encryption import NUMBERS, decrypt_text, encrypt_text, LETTERS_UPPER
+from gdpr.encryption import LETTERS_UPPER, NUMBERS, decrypt_text, encrypt_text
 
 PRE_NUM_WEIGHTS = [10, 5, 8, 4, 2, 1]
 NUM_WEIGHTS = [6, 3, 7, 9, 10, 5, 8, 4, 2, 1]

@@ -38,10 +38,10 @@ class AnonymizationModelMixin:
     def expire_consent(self, purpose_slug: str):
         LegalReason.objects.expire_consent(purpose_slug, self)
 
-    def delete(self, using=None, keep_parents=False):
+    def delete(self, *args, **kwargs):
         """Cleanup anonymization metadata"""
         obj_id = str(self.pk)
-        super().delete(using, keep_parents)
+        super().delete(*args, **kwargs)
         try:
             AnonymizedData.objects.filter(object_id=obj_id, content_type=self.content_type).delete()
         except Error as e:
