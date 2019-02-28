@@ -38,15 +38,19 @@ class ModelAnonymizerMeta(type):
         # Also ensure initialization is only performed for subclasses of ModelAnonymizer
         # (excluding Model class itself).
         parents = [b for b in bases if isinstance(b, ModelAnonymizerMeta)]
-        if not parents or not hasattr(new_obj, 'Meta') or getattr(new_obj.Meta, 'abstract', False):
+        if not parents or not hasattr(new_obj, 'Meta'):
             return new_obj
 
-        fields = {}
+        fields = getattr(new_obj, 'fields', {})
+
         for name, obj in attrs.items():
             if isinstance(obj, FieldAnonymizer):
                 fields[name] = obj
         new_obj.fields = fields
-        anonymizer_register.register(new_obj.Meta.model, new_obj)
+
+        if not getattr(new_obj.Meta, 'abstract', False):
+            anonymizer_register.register(new_obj.Meta.model, new_obj)
+
         return new_obj
 
 

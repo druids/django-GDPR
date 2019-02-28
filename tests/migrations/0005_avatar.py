@@ -9,7 +9,6 @@ import tests.validators
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('tests', '0004_facebook_id'),
     ]
@@ -29,16 +28,19 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='account',
             name='number',
-            field=models.CharField(blank=True, max_length=256, null=True, validators=[tests.validators.BankAccountValidator]),
+            field=models.CharField(blank=True, max_length=256, null=True,
+                                   validators=[tests.validators.BankAccountValidator]),
         ),
         migrations.AlterField(
             model_name='customer',
             name='personal_id',
-            field=models.CharField(blank=True, max_length=10, null=True, validators=[tests.validators.CZBirthNumberValidator]),
+            field=models.CharField(blank=True, max_length=10, null=True,
+                                   validators=[tests.validators.CZBirthNumberValidator]),
         ),
         migrations.AddField(
             model_name='avatar',
             name='custormer',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='avatars', to='tests.Customer'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='avatars',
+                                    to='tests.Customer'),
         ),
     ]

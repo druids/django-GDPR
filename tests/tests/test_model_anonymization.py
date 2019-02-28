@@ -320,4 +320,3 @@ class TestFileFieldAnonymizer(TestCase):
         # Cleanup
         avatar_3.image.delete()
         avatar_3.delete()
-
