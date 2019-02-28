@@ -86,6 +86,11 @@ class Note(AnonymizationModel):
     content_object = GenericForeignKey('content_type', 'object_id')
 
 
+class Avatar(AnonymizationModel):
+    custormer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="avatars")
+    image = models.FileField()
+
+
 if is_reversion_installed():
     from reversion import revisions as reversion
 

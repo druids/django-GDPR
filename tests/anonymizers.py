@@ -1,6 +1,6 @@
 from gdpr import anonymizers
 from gdpr.anonymizers.local import cs
-from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment
+from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment, Avatar
 
 
 class CustomerAnonymizer(anonymizers.ModelAnonymizer):
@@ -71,3 +71,10 @@ class NoteAnonymizer(anonymizers.ModelAnonymizer):
 
     class Meta:
         model = Note
+
+
+class AvatarAnonymizer(anonymizers.ModelAnonymizer):
+    image = anonymizers.DeleteFileFieldAnonymizer()
+
+    class Meta:
+        model = Avatar

@@ -2,12 +2,13 @@ from typing import List
 from unittest import skipIf
 
 from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
 from django.test import TestCase
 
 from gdpr.anonymizers import ModelAnonymizer
 from gdpr.utils import is_reversion_installed
 from tests.anonymizers import ContactFormAnonymizer
-from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment
+from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment, Avatar
 from .data import (
     ACCOUNT__IBAN, ACCOUNT__NUMBER, ACCOUNT__OWNER, ACCOUNT__SWIFT, ADDRESS__CITY, ADDRESS__HOUSE_NUMBER,
     ADDRESS__POST_CODE, ADDRESS__STREET, CUSTOMER__BIRTH_DATE, CUSTOMER__EMAIL, CUSTOMER__EMAIL2, CUSTOMER__EMAIL3,
@@ -297,3 +298,26 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         self.assertDictEqual(versions[0].field_dict, deanon_versions[0].field_dict)
         self.assertDictEqual(versions[1].field_dict, deanon_versions[1].field_dict)
         self.assertDictEqual(versions[2].field_dict, deanon_versions[2].field_dict)
+
+
+class TestFileFieldAnonymizer(TestCase):
+    def test_file_field(self):
+        customer = Customer(**CUSTOMER__KWARGS)
+        customer.save()
+
+        avatar = Avatar()
+        avatar.custormer = customer
+        avatar.image.save("test_file", ContentFile('Super secret data'), save=False)
+        avatar.save()
+
+        avatar_2: Avatar = Avatar.objects.last()
+        self.assertEqual(avatar_2.image.read(), b'Super secret data')
+        avatar_2._anonymize_obj(base_encryption_key="LoremIpsumDolorSitAmet")
+
+        avatar_3: Avatar = Avatar.objects.last()
+        self.assertNotEqual(avatar_3.image.read(), b'Super secret data')
+
+        # Cleanup
+        avatar_3.image.delete()
+        avatar_3.delete()
+

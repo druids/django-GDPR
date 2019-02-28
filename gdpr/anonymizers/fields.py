@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any, Callable, Optional, Union
 
 from django.core.exceptions import ImproperlyConfigured
+from django.core.files.base import ContentFile
 from unidecode import unidecode
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
@@ -248,3 +249,17 @@ class SiteIDUsernameFieldAnonymizer(FieldAnonymizer):
         if len(split) == 2:
             return f'{split[0]}:{decrypt_email_address(encryption_key, split[1])}'
         return decrypt_email_address(encryption_key, value)
+
+
+class DeleteFileFieldAnonymizer(FieldAnonymizer):
+    """
+    One way anonymization of FileField.
+    """
+
+    is_reversible = False
+
+    def get_encrypted_value(self, value: Any, encryption_key: str):
+        path = value.path
+        value.delete()
+        value.save(path, ContentFile("THIS FILE HAS BEEN ANONYMIZED :/."), save=False)
+        return value
