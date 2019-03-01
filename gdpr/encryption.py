@@ -1,11 +1,15 @@
+from decimal import Decimal
+from typing import Union
+
 from django.utils.translation import gettext as _
 
 __all__ = ('encrypt_text', 'decrypt_text', 'encrypt_email_address', 'decrypt_email_address', 'numerize_key', 'NUMBERS',
            'LETTERS_UPPER', 'LETTERS_ONLY', 'ALL_CHARS', 'SYMBOLS', 'LETTERS_ALL', 'LETTERS_ALL_WITH_SPACE',
-           'translate_text', 'translate_email_address', 'translate_iban')
+           'NUMBERS_WITHOUT_ZERO', 'translate_text', 'translate_email_address', 'translate_iban')
 
 # Vigenere like Cipher (Polyalphabetic Substitution Cipher)
 
+NUMBERS_WITHOUT_ZERO = '123456789'
 NUMBERS = '1234567890'
 LETTERS_ONLY = 'abcdefghijklmnopqrstuvwxyz'
 LETTERS_UPPER = LETTERS_ONLY.upper()
@@ -275,7 +279,7 @@ def numerize_key(key: str) -> int:
 
 
 def translate_type_match(key: str, text: str, encrypt: bool = True, numbers: str = NUMBERS,
-                         letters: str = LETTERS_ALL) -> str:
+                         alphabet: str = LETTERS_ALL) -> str:
     """
     Translate text while retaining type (char, number) based on polyalphabetic substitution cipher.
 
@@ -291,7 +295,7 @@ def translate_type_match(key: str, text: str, encrypt: bool = True, numbers: str
         text: The text to be encrypted or decrypted
         encrypt: If ``True`` the function encrypts the text. If ``False`` the function decrypts the text.
         numbers: The "alphabet" used to translate numbers.
-        letters: The "alphabet" used to translate letters.
+        alphabet: The "alphabet" used to translate letters.
 
     Returns:
         Encrypted or decrypted text
@@ -302,7 +306,7 @@ def translate_type_match(key: str, text: str, encrypt: bool = True, numbers: str
     key_index = 0
     for char in text:
         is_symbol_number = char in numbers
-        alphabet = numbers if is_symbol_number else letters
+        alphabet = numbers if is_symbol_number else alphabet
         actual_key = key if not is_symbol_number else str(ord(key[key_index]))[-1]
 
         num = alphabet.find(char)
@@ -350,4 +354,51 @@ def translate_iban(key: str, iban: str, encrypt: bool = True) -> str:
         Encrypted or decrypted IBAN
 
     """
-    return iban[:2].upper() + translate_type_match(key, iban[2:].upper(), encrypt, letters=LETTERS_UPPER)
+    return iban[:2].upper() + translate_type_match(key, iban[2:].upper(), encrypt, alphabet=LETTERS_UPPER)
+
+
+def translate_number(key: str, number: Union[Decimal, int], encrypt: bool = True):
+    """
+    Takes number converts it to string and translate it using ``translate_text`` with num alphabet.
+
+    Args:
+        key: The encryption key
+        number: The number Decimal or int to be translated
+        encrypt: If ``True`` the function encrypts the text. If ``False`` the function decrypts the text.
+
+    Returns:
+        Encrypted number
+
+    """
+    original_type = type(number)
+    str_number = str(number)
+    if "-" in str_number:
+        if "." in str_number:
+            return original_type(
+                str_number[0] + translate_text(
+                    key, str_number[1], encrypt=encrypt, alphabet=NUMBERS_WITHOUT_ZERO
+                ) + translate_text(
+                    key, str_number[2:-1], encrypt=encrypt, alphabet=NUMBERS
+                ) + translate_text(key, str_number[-1], encrypt=encrypt, alphabet=NUMBERS_WITHOUT_ZERO)
+            )
+        else:
+            return original_type(
+                str_number[0] + translate_text(
+                    key, str_number[1], encrypt=encrypt, alphabet=NUMBERS_WITHOUT_ZERO
+                ) + translate_text(key, str_number[2:], encrypt=encrypt, alphabet=NUMBERS)
+            )
+    else:
+        if "." in str_number:
+            return original_type(
+                translate_text(
+                    key, str_number[0], encrypt=encrypt, alphabet=NUMBERS_WITHOUT_ZERO
+                ) + translate_text(
+                    key, str_number[1:-1], encrypt=encrypt, alphabet=NUMBERS
+                ) + translate_text(key, str_number[-1], encrypt=encrypt, alphabet=NUMBERS_WITHOUT_ZERO)
+            )
+        else:
+            return original_type(
+                translate_text(
+                    key, str_number[0], encrypt=encrypt, alphabet=NUMBERS_WITHOUT_ZERO
+                ) + translate_text(key, str_number[1:], encrypt=encrypt, alphabet=NUMBERS)
+            )

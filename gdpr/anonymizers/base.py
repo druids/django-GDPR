@@ -109,7 +109,7 @@ class FieldAnonymizer:
 
 
 class NumericFieldAnonymizer(FieldAnonymizer):
-    max_anonymization_range: int
+    max_anonymization_range: Optional[int] = None
 
     def __init__(self, max_anonymization_range: int = None, ignore_empty_values: bool = None,
                  empty_values: Optional[List[Any]] = None):
@@ -134,7 +134,7 @@ class NumericFieldAnonymizer(FieldAnonymizer):
         """
         if value is None:
             if self.max_anonymization_range is None:
-                raise ImproperlyConfigured(f'{self.__class__} does not have `max_anonymization_range` specified.')
+                return numerize_key(encryption_key)
             return numerize_key(encryption_key) % self.max_anonymization_range
 
         return numerize_key(encryption_key) % 10 ** get_number_guess_len(value)

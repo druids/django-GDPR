@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 from typing import Any, Callable, Optional, Union
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from unidecode import unidecode
@@ -9,8 +10,8 @@ from unidecode import unidecode
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
 from gdpr.encryption import (
     decrypt_email_address, decrypt_text, encrypt_email_address, encrypt_text, numerize_key, translate_iban,
-    translate_text
-)
+    translate_text,
+    translate_number)
 from gdpr.ipcypher import decrypt_ip, encrypt_ip
 from gdpr.utils import get_number_guess_len
 
@@ -139,17 +140,23 @@ class DecimalFieldAnonymizer(NumericFieldAnonymizer):
     Anonymization for CharField.
     """
 
-    max_anonymization_range = 10000
-    decimal_places: int = 2
-
-    def get_offset(self, encryption_key: str):
-        return Decimal(self.get_numeric_encryption_key(encryption_key)) / Decimal(10 ** self.decimal_places)
-
     def get_encrypted_value(self, value, encryption_key: str):
-        return value + self.get_offset(encryption_key)
+        return translate_number(str(self.get_numeric_encryption_key(encryption_key)), value)
 
     def get_decrypted_value(self, value, encryption_key: str):
-        return value - self.get_offset(encryption_key)
+        return translate_number(str(self.get_numeric_encryption_key(encryption_key)), value, encrypt=False)
+
+
+class IntegerFieldAnonymizer(NumericFieldAnonymizer):
+    """
+    Anonymization for CharField.
+    """
+
+    def get_encrypted_value(self, value, encryption_key: str):
+        return translate_number(str(self.get_numeric_encryption_key(encryption_key)), value)
+
+    def get_decrypted_value(self, value, encryption_key: str):
+        return translate_number(str(self.get_numeric_encryption_key(encryption_key)), value, encrypt=False)
 
 
 class IPAddressFieldAnonymizer(FieldAnonymizer):
@@ -196,13 +203,10 @@ class JSONFieldAnonymizer(FieldAnonymizer):
         elif type(value) is str:
             return translate_text(encryption_key, value, anonymize)  # type: ignore
         elif type(value) is int:
-            return value + self.get_numeric_encryption_key(encryption_key, value) * (  # type: ignore
-                1 if anonymize else -1)
+            return translate_number(encryption_key, value, anonymize)  # type: ignore
         elif type(value) is float:
-            # 9.14 - 3.14 -> 3.1400000000000006 - (To avoid this we are using Decimal)
-            return float(
-                Decimal(str(value)) + self.get_numeric_encryption_key(encryption_key, value) * (  # type: ignore
-                    1 if anonymize else -1))
+            # We cannot safely anonymize floats
+            return value
         elif type(value) is dict:
             return {key: self.anonymize_json_value(item, encryption_key, anonymize) for key, item in
                     value.items()}  # type: ignore

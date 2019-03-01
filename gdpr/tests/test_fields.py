@@ -8,8 +8,8 @@ from gdpr.anonymizers import (
     StaticValueFieldAnonymizer
 )
 from gdpr.anonymizers.fields import (
-    DateTimeFieldAnonymizer, FunctionFieldAnonymizer, JSONFieldAnonymizer, SiteIDUsernameFieldAnonymizer
-)
+    DateTimeFieldAnonymizer, FunctionFieldAnonymizer, JSONFieldAnonymizer, SiteIDUsernameFieldAnonymizer,
+    IntegerFieldAnonymizer)
 
 
 class TestCharField(TestCase):
@@ -137,7 +137,7 @@ class TestDecimalField(TestCase):
         cls.field = DecimalFieldAnonymizer()
         cls.encryption_key = 'LoremIpsumDolorSitAmet'
 
-    def test_decimal_field(self):
+    def test_decimal_field_positive(self):
         decimal = Decimal('3.14159265358979')
         out = self.field.get_encrypted_value(decimal, self.encryption_key)
 
@@ -146,6 +146,43 @@ class TestDecimalField(TestCase):
         out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
 
         self.assertEqual(out_decrypt, decimal)
+
+    def test_decimal_field_negative(self):
+        decimal = Decimal('-3.14159265358979')
+        out = self.field.get_encrypted_value(decimal, self.encryption_key)
+
+        self.assertNotEqual(out, decimal)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+
+        self.assertEqual(out_decrypt, decimal)
+
+
+class TestIntegerField(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.field = IntegerFieldAnonymizer()
+        cls.encryption_key = 'LoremIpsumDolorSitAmet'
+
+    def test_integer_field_positive(self):
+        number = 42
+        out = self.field.get_encrypted_value(number, self.encryption_key)
+
+        self.assertNotEqual(out, number)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+
+        self.assertEqual(out_decrypt, number)
+
+    def test_integer_field_negative(self):
+        number = -42
+        out = self.field.get_encrypted_value(number, self.encryption_key)
+
+        self.assertNotEqual(out, number)
+
+        out_decrypt = self.field.get_decrypted_value(out, self.encryption_key)
+
+        self.assertEqual(out_decrypt, number)
 
 
 class TestIPAddressField(TestCase):
@@ -249,24 +286,6 @@ class TestJSONFieldAnonymizer(TestCase):
 
     def test_int_value_overflow(self):
         value = 9
-        out = self.field.anonymize_json_value(value, self.encryption_key)
-
-        self.assertNotEqual(out, value)
-        out_decrypt = self.field.anonymize_json_value(out, self.encryption_key, False)
-
-        self.assertEqual(out_decrypt, value)
-
-    def test_float_value(self):
-        value = 3.14
-        out = self.field.anonymize_json_value(value, self.encryption_key)
-
-        self.assertNotEqual(out, value)
-        out_decrypt = self.field.anonymize_json_value(out, self.encryption_key, False)
-
-        self.assertEqual(out_decrypt, value)
-
-    def test_float_value_overflow(self):
-        value = 9.14
         out = self.field.anonymize_json_value(value, self.encryption_key)
 
         self.assertNotEqual(out, value)

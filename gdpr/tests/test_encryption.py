@@ -1,7 +1,11 @@
+from decimal import Decimal
+
 from django.test import TestCase
 from faker import Faker
 
-from gdpr.encryption import decrypt_email_address, decrypt_text, encrypt_email_address, encrypt_text, translate_iban
+from gdpr.encryption import (
+    decrypt_email_address, decrypt_text, encrypt_email_address, encrypt_text, translate_iban, translate_number
+)
 
 IBANS = [
     'AL47 2121 1009 0000 0002 3569 8741',
@@ -89,6 +93,7 @@ class TestEncryption(TestCase):
     def setUp(self):
         self.faker = Faker()
         self.encryption_key = 'LoremIpsumDolorSitAmet'
+        self.numeric_encryption_key = '314159265358'
 
     def test_encrypt_text_full_name(self):
         """
@@ -140,3 +145,63 @@ class TestEncryption(TestCase):
                 translate_iban(self.encryption_key, encrypted, False), IBAN,
                 "The decrypted IBAN is not equal to the original IBAN."
             )
+
+    def test_translate_number_whole_positive(self):
+        """
+        Test metod `translate_number` on whole positive number.
+        """
+        number = 42
+        encrypted = translate_number(self.numeric_encryption_key, number)
+
+        self.assertNotEqual(number, encrypted)
+        self.assertEqual(type(number), type(encrypted))
+
+        decrypted = translate_number(self.numeric_encryption_key, encrypted, encrypt=False)
+
+        self.assertEqual(number, decrypted)
+        self.assertEqual(type(number), type(decrypted))
+
+    def test_translate_number_whole_negative(self):
+        """
+        Test metod `translate_number` on whole negative number.
+        """
+        number = -42
+        encrypted = translate_number(self.numeric_encryption_key, number)
+
+        self.assertNotEqual(number, encrypted)
+        self.assertEqual(type(number), type(encrypted))
+
+        decrypted = translate_number(self.numeric_encryption_key, encrypted, encrypt=False)
+
+        self.assertEqual(number, decrypted)
+        self.assertEqual(type(number), type(decrypted))
+
+    def test_translate_number_decimal_positive(self):
+        """
+        Test metod `translate_number` on decimal positive number.
+        """
+        number = Decimal("3.14")
+        encrypted = translate_number(self.numeric_encryption_key, number)
+
+        self.assertNotEqual(number, encrypted)
+        self.assertEqual(type(number), type(encrypted))
+
+        decrypted = translate_number(self.numeric_encryption_key, encrypted, encrypt=False)
+
+        self.assertEqual(number, decrypted)
+        self.assertEqual(type(number), type(decrypted))
+
+    def test_translate_number_decimal_negative(self):
+        """
+        Test metod `translate_number` on decimal positive number.
+        """
+        number = Decimal("-3.14")
+        encrypted = translate_number(self.numeric_encryption_key, number)
+
+        self.assertNotEqual(number, encrypted)
+        self.assertEqual(type(number), type(encrypted))
+
+        decrypted = translate_number(self.numeric_encryption_key, encrypted, encrypt=False)
+
+        self.assertEqual(number, decrypted)
+        self.assertEqual(type(number), type(decrypted))
