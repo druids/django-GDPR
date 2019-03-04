@@ -47,14 +47,20 @@ class FieldAnonymizer:
             raise self.IrreversibleAnonymizationException
         return self.is_reversible
 
+    def get_ignore_empty_values(self, value):
+        return self._ignore_empty_values
+
+    def get_is_value_empty(self, value):
+        return self.get_ignore_empty_values(value) and value in self._empty_values
+
     def _get_anonymized_value_from_value(self, value, encryption_key: str):
-        if self._ignore_empty_values and value in self._empty_values:
+        if self.get_is_value_empty(value):
             return value
         return self.get_encrypted_value(value, encryption_key)
 
     def _get_deanonymized_value_from_value(self, obj, value, encryption_key: str):
         if self.get_is_reversible(obj, raise_exception=True):
-            if self._ignore_empty_values and value in self._empty_values:
+            if self.get_is_value_empty(value):
                 return value
             return self.get_decrypted_value(value, encryption_key)
 

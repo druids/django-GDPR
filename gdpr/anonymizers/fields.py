@@ -255,7 +255,18 @@ class SiteIDUsernameFieldAnonymizer(FieldAnonymizer):
         return decrypt_email_address(encryption_key, value)
 
 
-class DeleteFileFieldAnonymizer(FieldAnonymizer):
+class FileFieldAnonymizer(FieldAnonymizer):
+    """
+    Base class for all FileFieldAnonymizers.
+
+    Overrides ``get_is_value_empty`` to check for files.
+    """
+
+    def get_is_value_empty(self, value):
+        return self.get_ignore_empty_values(value) and not bool(value)
+
+
+class DeleteFileFieldAnonymizer(FileFieldAnonymizer):
     """
     One way anonymization of FileField.
     """
@@ -267,7 +278,7 @@ class DeleteFileFieldAnonymizer(FieldAnonymizer):
         return value
 
 
-class ReplaceFileFieldAnonymizer(FieldAnonymizer):
+class ReplaceFileFieldAnonymizer(FileFieldAnonymizer):
     """
     One way anonymization of FileField.
     """
@@ -277,15 +288,15 @@ class ReplaceFileFieldAnonymizer(FieldAnonymizer):
 
     def __init__(self, replacement_file: Optional[str] = None, *args, **kwargs):
         if replacement_file is not None:
-            self.replace_file = replacement_file
+            self.replacement_file = replacement_file
         super().__init__(*args, **kwargs)
 
     def get_replacement_file(self):
         if self.replacement_file is not None:
-            with open(self.replacement_file, "r") as f:
+            with open(self.replacement_file, "rb") as f:
                 return f.read()
         elif getattr(settings, "GDPR_REPLACE_FILE_PATH", None) is not None:
-            with open(getattr(settings, "GDPR_REPLACE_FILE_PATH"), "r") as f:
+            with open(getattr(settings, "GDPR_REPLACE_FILE_PATH"), "rb") as f:
                 return f.read()
         else:
             return ContentFile("THIS FILE HAS BEEN ANONYMIZED.")
