@@ -74,7 +74,7 @@ class NoteAnonymizer(anonymizers.ModelAnonymizer):
 
 
 class AvatarAnonymizer(anonymizers.ModelAnonymizer):
-    image = anonymizers.DeleteFileFieldAnonymizer()
+    image = anonymizers.ReplaceFileFieldAnonymizer()
 
     class Meta:
         model = Avatar

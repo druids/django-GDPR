@@ -263,7 +263,35 @@ class DeleteFileFieldAnonymizer(FieldAnonymizer):
     is_reversible = False
 
     def get_encrypted_value(self, value: Any, encryption_key: str):
+        value.delete(save=False)
+        return value
+
+
+class ReplaceFileFieldAnonymizer(FieldAnonymizer):
+    """
+    One way anonymization of FileField.
+    """
+
+    is_reversible = False
+    replacement_file: Optional[str] = None
+
+    def __init__(self, replacement_file: Optional[str] = None, *args, **kwargs):
+        if replacement_file is not None:
+            self.replace_file = replacement_file
+        super().__init__(*args, **kwargs)
+
+    def get_replacement_file(self):
+        if self.replacement_file is not None:
+            with open(self.replacement_file, "r") as f:
+                return f.read()
+        elif getattr(settings, "GDPR_REPLACE_FILE_PATH", None) is not None:
+            with open(getattr(settings, "GDPR_REPLACE_FILE_PATH"), "r") as f:
+                return f.read()
+        else:
+            return ContentFile("THIS FILE HAS BEEN ANONYMIZED.")
+
+    def get_encrypted_value(self, value: Any, encryption_key: str):
         path = value.path
-        value.delete()
-        value.save(path, ContentFile("THIS FILE HAS BEEN ANONYMIZED :/."), save=False)
+        value.delete(save=False)
+        value.save(path, self.get_replacement_file(), save=False)
         return value
