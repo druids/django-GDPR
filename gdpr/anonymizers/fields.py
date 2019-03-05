@@ -3,7 +3,7 @@ from typing import Any, Callable, Optional, Union
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.files.base import ContentFile
+from django.core.files.base import ContentFile, File
 from unidecode import unidecode
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
@@ -292,9 +292,9 @@ class ReplaceFileFieldAnonymizer(FileFieldAnonymizer):
 
     def get_replacement_file(self):
         if self.replacement_file is not None:
-            return open(self.replacement_file, "rb")
+            return File(open(self.replacement_file, "rb"))
         elif getattr(settings, "GDPR_REPLACE_FILE_PATH", None) is not None:
-            return open(getattr(settings, "GDPR_REPLACE_FILE_PATH"), "rb")
+            return File(open(getattr(settings, "GDPR_REPLACE_FILE_PATH"), "rb"))
         else:
             return ContentFile("THIS FILE HAS BEEN ANONYMIZED.")
 
