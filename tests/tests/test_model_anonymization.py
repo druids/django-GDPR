@@ -6,6 +6,7 @@ from django.core.files.base import ContentFile
 from django.test import TestCase
 
 from gdpr.anonymizers import ModelAnonymizer
+from gdpr.loading import anonymizer_register
 from gdpr.utils import is_reversion_installed
 from tests.anonymizers import ContactFormAnonymizer
 from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment, Avatar
@@ -306,8 +307,8 @@ class TestFileFieldAnonymizer(TestCase):
         customer.save()
 
         avatar = Avatar()
-        avatar.custormer = customer
-        avatar.image.save("test_file", ContentFile('Super secret data'), save=False)
+        avatar.customer = customer
+        avatar.image.save("test_file_secret_data", ContentFile('Super secret data'), save=False)
         avatar.save()
 
         avatar_2: Avatar = Avatar.objects.last()
@@ -317,6 +318,28 @@ class TestFileFieldAnonymizer(TestCase):
         avatar_3: Avatar = Avatar.objects.last()
         self.assertNotEqual(avatar_3.image.read(), b'Super secret data')
 
+        # Cleanup
+        avatar_3.image.delete()
+        avatar_3.delete()
+
+    def test_file_field_real_file(self):
+        anonymizer = anonymizer_register[Avatar]
+        anonymizer.image.replacement_file = "test_file"
+        customer = Customer(**CUSTOMER__KWARGS)
+        customer.save()
+
+        avatar = Avatar()
+        avatar.customer = customer
+        avatar.image.save("test_file_real", ContentFile('Super secret data'))
+
+        avatar_2: Avatar = Avatar.objects.last()
+        self.assertEqual(avatar_2.image.read(), b'Super secret data')
+        avatar_2._anonymize_obj(base_encryption_key="LoremIpsumDolorSitAmet")
+
+        avatar_3: Avatar = Avatar.objects.last()
+        self.assertNotEqual(avatar_3.image.read(), b'Super secret data')
+
+        anonymizer.image.replacement_file = None
         # Cleanup
         avatar_3.image.delete()
         avatar_3.delete()

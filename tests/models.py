@@ -87,7 +87,7 @@ class Note(AnonymizationModel):
 
 
 class Avatar(AnonymizationModel):
-    custormer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="avatars")
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="avatars")
     image = models.FileField()
 
 

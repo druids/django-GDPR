@@ -1,5 +1,4 @@
 from datetime import timedelta
-from decimal import Decimal
 from typing import Any, Callable, Optional, Union
 
 from django.conf import settings
@@ -293,16 +292,16 @@ class ReplaceFileFieldAnonymizer(FileFieldAnonymizer):
 
     def get_replacement_file(self):
         if self.replacement_file is not None:
-            with open(self.replacement_file, "rb") as f:
-                return f.read()
+            return open(self.replacement_file, "rb")
         elif getattr(settings, "GDPR_REPLACE_FILE_PATH", None) is not None:
-            with open(getattr(settings, "GDPR_REPLACE_FILE_PATH"), "rb") as f:
-                return f.read()
+            return open(getattr(settings, "GDPR_REPLACE_FILE_PATH"), "rb")
         else:
             return ContentFile("THIS FILE HAS BEEN ANONYMIZED.")
 
     def get_encrypted_value(self, value: Any, encryption_key: str):
         path = value.path
+        file = self.get_replacement_file()
         value.delete(save=False)
-        value.save(path, self.get_replacement_file(), save=False)
+        value.save(path, file, save=False)
+        file.close()
         return value
