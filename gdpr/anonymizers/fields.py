@@ -1,4 +1,5 @@
 from datetime import timedelta
+from os.path import relpath
 from typing import Any, Callable, Optional, Union
 
 from django.conf import settings
@@ -284,10 +285,14 @@ class ReplaceFileFieldAnonymizer(FileFieldAnonymizer):
 
     is_reversible = False
     replacement_file: Optional[str] = None
+    strip_media_path = False
 
-    def __init__(self, replacement_file: Optional[str] = None, *args, **kwargs):
+    def __init__(self, replacement_file: Optional[str] = None, strip_media_path: Optional[bool] = None,
+                 *args, **kwargs):
         if replacement_file is not None:
             self.replacement_file = replacement_file
+        if strip_media_path is not None:
+            self.strip_media_path = strip_media_path
         super().__init__(*args, **kwargs)
 
     def get_replacement_file(self):
@@ -300,6 +305,10 @@ class ReplaceFileFieldAnonymizer(FileFieldAnonymizer):
 
     def get_encrypted_value(self, value: Any, encryption_key: str):
         path = value.path
+        if self.strip_media_path:
+            media_path = getattr(settings, "MEDIA_PATH", None)
+            if media_path is not None:
+                path = relpath(path, media_path)
         file = self.get_replacement_file()
         value.delete(save=False)
         value.save(path, file, save=False)
