@@ -306,7 +306,7 @@ class ReplaceFileFieldAnonymizer(FileFieldAnonymizer):
     def get_encrypted_value(self, value: Any, encryption_key: str):
         path = value.path
         if self.strip_media_path:
-            media_path = getattr(settings, "MEDIA_PATH", None)
+            media_path = getattr(settings, "MEDIA_ROOT", None)
             if media_path is not None:
                 path = relpath(path, media_path)
         file = self.get_replacement_file()
