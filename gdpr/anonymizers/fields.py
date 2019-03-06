@@ -5,6 +5,8 @@ from typing import Any, Callable, Optional, Union
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile, File
+from django.db.models.fields.files import FieldFile
+from django.utils.inspect import func_supports_parameter
 from unidecode import unidecode
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
@@ -285,14 +287,10 @@ class ReplaceFileFieldAnonymizer(FileFieldAnonymizer):
 
     is_reversible = False
     replacement_file: Optional[str] = None
-    strip_media_path = False
 
-    def __init__(self, replacement_file: Optional[str] = None, strip_media_path: Optional[bool] = None,
-                 *args, **kwargs):
+    def __init__(self, replacement_file: Optional[str] = None, *args, **kwargs):
         if replacement_file is not None:
             self.replacement_file = replacement_file
-        if strip_media_path is not None:
-            self.strip_media_path = strip_media_path
         super().__init__(*args, **kwargs)
 
     def get_replacement_file(self):
@@ -303,14 +301,20 @@ class ReplaceFileFieldAnonymizer(FileFieldAnonymizer):
         else:
             return ContentFile("THIS FILE HAS BEEN ANONYMIZED.")
 
-    def get_encrypted_value(self, value: Any, encryption_key: str):
-        path = value.path
-        if self.strip_media_path:
-            media_path = getattr(settings, "MEDIA_ROOT", None)
-            if media_path is not None:
-                path = relpath(path, media_path)
-        file = self.get_replacement_file()
+    def get_encrypted_value(self, value: FieldFile, encryption_key: str):
+        file_name = value.name
         value.delete(save=False)
-        value.save(path, file, save=False)
+        file = self.get_replacement_file()
+
+        if func_supports_parameter(value.storage.save, 'max_length'):
+            value.name = value.storage.save(file_name, file, max_length=value.field.max_length)
+        else:
+            #  Backwards compatibility removed in Django 1.10
+            value.name = value.storage.save(file_name, file)
+        setattr(value.instance, value.field.name, value.name)
+
+        value._size = file.size  # Django 1.8 + 1.9
+        value._committed = True
         file.close()
+
         return value
