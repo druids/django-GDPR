@@ -5,7 +5,7 @@ from django.utils.translation import gettext as _
 
 __all__ = ('encrypt_text', 'decrypt_text', 'encrypt_email_address', 'decrypt_email_address', 'numerize_key', 'NUMBERS',
            'LETTERS_UPPER', 'LETTERS_ONLY', 'ALL_CHARS', 'SYMBOLS', 'LETTERS_ALL', 'LETTERS_ALL_WITH_SPACE',
-           'NUMBERS_WITHOUT_ZERO', 'translate_text', 'translate_email_address', 'translate_iban')
+           'NUMBERS_WITHOUT_ZERO', 'JSON_SAFE_CHARS', 'translate_text', 'translate_email_address', 'translate_iban')
 
 # Vigenere like Cipher (Polyalphabetic Substitution Cipher)
 
@@ -18,6 +18,8 @@ LETTERS_ALL_WITH_SPACE = LETTERS_ALL + ' '
 SYMBOLS = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
 # Translators: You can add special characters of your language at the end
 ALL_CHARS = _(' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~')
+# Translators: You can add special characters of your language at the end
+JSON_SAFE_CHARS = _(' !#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~')
 
 # https://en.wikipedia.org/wiki/Email_address#Syntax
 RESTRICTED_EMAIL_LOCAL_CHARS = LETTERS_ONLY + NUMBERS + '_-'

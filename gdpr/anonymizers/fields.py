@@ -13,7 +13,7 @@ from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
 from gdpr.encryption import (
     decrypt_email_address, decrypt_text, encrypt_email_address, encrypt_text, numerize_key, translate_iban,
     translate_text,
-    translate_number)
+    translate_number, JSON_SAFE_CHARS)
 from gdpr.ipcypher import decrypt_ip, encrypt_ip
 from gdpr.utils import get_number_guess_len
 
@@ -203,7 +203,7 @@ class JSONFieldAnonymizer(FieldAnonymizer):
         if value is None:
             return None
         elif type(value) is str:
-            return translate_text(encryption_key, value, anonymize)  # type: ignore
+            return translate_text(encryption_key, value, anonymize, JSON_SAFE_CHARS)  # type: ignore
         elif type(value) is int:
             return translate_number(encryption_key, value, anonymize)  # type: ignore
         elif type(value) is float:
