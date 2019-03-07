@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 
 from django.test import TestCase
@@ -8,8 +9,8 @@ from gdpr.anonymizers import (
     StaticValueFieldAnonymizer
 )
 from gdpr.anonymizers.fields import (
-    DateTimeFieldAnonymizer, FunctionFieldAnonymizer, JSONFieldAnonymizer, SiteIDUsernameFieldAnonymizer,
-    IntegerFieldAnonymizer)
+    DateTimeFieldAnonymizer, FunctionFieldAnonymizer, IntegerFieldAnonymizer, JSONFieldAnonymizer,
+    SiteIDUsernameFieldAnonymizer)
 
 
 class TestCharField(TestCase):
@@ -294,7 +295,7 @@ class TestJSONFieldAnonymizer(TestCase):
         self.assertEqual(out_decrypt, value)
 
     def test_dict(self):
-        json = {
+        json_dict = {
             'breed': 'labrador',
             'owner': {
                 'name': 'Bob',
@@ -306,21 +307,53 @@ class TestJSONFieldAnonymizer(TestCase):
             'none_field': None
         }
 
-        out = self.field.anonymize_json_value(json, self.encryption_key)
+        out = self.field.anonymize_json_value(json_dict, self.encryption_key)
 
-        self.assertTrue(out != json)
+        self.assertNotEqual(out, json_dict)
 
         out_decrypt = self.field.anonymize_json_value(out, self.encryption_key, False)
 
-        self.assertDictEqual(json, out_decrypt)
+        self.assertDictEqual(json_dict, out_decrypt)
+
+    def test_dict_str(self):
+        json_dict = {
+            'breed': 'labrador',
+            'owner': {
+                'name': 'Bob',
+                'other_pets': [{'name': 'Fishy'}]
+            },
+            'age': 5,
+            'height': 9.5,
+            'is_brown': True,
+            'none_field': None
+        }
+
+        out = json.loads(self.field.get_encrypted_value(json.dumps(json_dict), self.encryption_key))
+
+        self.assertNotEqual(out, json_dict)
+
+        out_decrypt = json.loads(self.field.get_decrypted_value(json.dumps(out), self.encryption_key))
+
+        self.assertDictEqual(json_dict, out_decrypt)
 
     def test_list(self):
-        json = ['banana', 'oranges', 5, 3.14, False, None, {'name': 'Bob'}]
+        json_list = ['banana', 'oranges', 5, 3.14, False, None, {'name': 'Bob'}]
 
-        out = self.field.anonymize_json_value(json, self.encryption_key)
+        out = self.field.anonymize_json_value(json_list, self.encryption_key)
 
-        self.assertTrue(out != json)
+        self.assertNotEqual(out, json_list)
 
         out_decrypt = self.field.anonymize_json_value(out, self.encryption_key, False)
 
-        self.assertListEqual(json, out_decrypt)
+        self.assertListEqual(json_list, out_decrypt)
+
+    def test_list_str(self):
+        json_list = ['banana', 'oranges', 5, 3.14, False, None, {'name': 'Bob'}]
+
+        out = json.loads(self.field.get_encrypted_value(json.dumps(json_list), self.encryption_key))
+
+        self.assertNotEqual(out, json_list)
+
+        out_decrypt = json.loads(self.field.get_decrypted_value(json.dumps(out), self.encryption_key))
+
+        self.assertListEqual(json_list, out_decrypt)

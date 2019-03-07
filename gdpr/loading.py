@@ -10,7 +10,6 @@ from django.utils.encoding import force_text
 
 from .utils import str_to_class
 
-
 if TYPE_CHECKING:
     from gdpr.anonymizers import ModelAnonymizer
     from gdpr.purposes import AbstractPurpose

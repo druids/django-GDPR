@@ -1,9 +1,9 @@
+import json
 from datetime import timedelta
-from os.path import relpath
 from typing import Any, Callable, Optional, Union
 
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.files.base import ContentFile, File
 from django.db.models.fields.files import FieldFile
 from django.utils.inspect import func_supports_parameter
@@ -11,9 +11,8 @@ from unidecode import unidecode
 
 from gdpr.anonymizers.base import FieldAnonymizer, NumericFieldAnonymizer
 from gdpr.encryption import (
-    decrypt_email_address, decrypt_text, encrypt_email_address, encrypt_text, numerize_key, translate_iban,
-    translate_text,
-    translate_number, JSON_SAFE_CHARS)
+    JSON_SAFE_CHARS, decrypt_email_address, decrypt_text, encrypt_email_address, encrypt_text, numerize_key,
+    translate_iban, translate_number, translate_text)
 from gdpr.ipcypher import decrypt_ip, encrypt_ip
 from gdpr.utils import get_number_guess_len
 
@@ -219,9 +218,19 @@ class JSONFieldAnonymizer(FieldAnonymizer):
         return value
 
     def get_encrypted_value(self, value, encryption_key: str):
+        if type(value) not in [dict, list, str]:
+            raise ValidationError("JSONFieldAnonymizer encountered unknown type of json. "
+                                  "Only python dict and list are supported.")
+        if type(value) == str:
+            return json.dumps(self.anonymize_json_value(json.loads(value), encryption_key))
         return self.anonymize_json_value(value, encryption_key)
 
     def get_decrypted_value(self, value, encryption_key: str):
+        if type(value) not in [dict, list, str]:
+            raise ValidationError("JSONFieldAnonymizer encountered unknown type of json. "
+                                  "Only python dict and list are supported.")
+        if type(value) == str:
+            return json.dumps(self.anonymize_json_value(json.loads(value), encryption_key, anonymize=False))
         return self.anonymize_json_value(value, encryption_key, anonymize=False)
 
 
