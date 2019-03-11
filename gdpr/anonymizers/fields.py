@@ -85,10 +85,10 @@ class DateTimeFieldAnonymizer(NumericFieldAnonymizer):
     max_anonymization_range = 365 * 24 * 60 * 60
 
     def get_encrypted_value(self, value, encryption_key: str):
-        return value - timedelta(seconds=self.get_numeric_encryption_key(encryption_key))
+        return value - timedelta(seconds=(self.get_numeric_encryption_key(encryption_key) + 1))
 
     def get_decrypted_value(self, value, encryption_key: str):
-        return value + timedelta(seconds=self.get_numeric_encryption_key(encryption_key))
+        return value + timedelta(seconds=(self.get_numeric_encryption_key(encryption_key) + 1))
 
 
 class DateFieldAnonymizer(NumericFieldAnonymizer):
@@ -100,10 +100,10 @@ class DateFieldAnonymizer(NumericFieldAnonymizer):
     max_anonymization_range = 365
 
     def get_encrypted_value(self, value, encryption_key: str):
-        return value - timedelta(days=self.get_numeric_encryption_key(encryption_key))
+        return value - timedelta(days=(self.get_numeric_encryption_key(encryption_key) + 1))
 
     def get_decrypted_value(self, value, encryption_key: str):
-        return value + timedelta(days=self.get_numeric_encryption_key(encryption_key))
+        return value + timedelta(days=(self.get_numeric_encryption_key(encryption_key) + 1))
 
 
 class CharFieldAnonymizer(FieldAnonymizer):
