@@ -8,7 +8,7 @@ setup(
     description='Library for GDPR implementation',
     author='Druids',
     author_email='matllubos@gmail.com',
-    url='https://github.com/matllubos/django-GDPR',
+    url='https://github.com/druids/django-GDPR',
     license='MIT',
     package_dir={'gdpr': 'gdpr'},
     include_package_data=True,
