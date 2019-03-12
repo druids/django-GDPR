@@ -1,14 +1,12 @@
 import math
 
-from django.core.management.base import BaseCommand
-
 import pyprind
-
-from gdpr.anonymizers import DeleteModelAnonymizer
-from gdpr.loading import get_anonymizers
-
+from django.core.management.base import BaseCommand
 from utils import chunked_iterator, chunked_queryset_iterator
 from utils.commands import ProgressBarStream
+
+from gdpr.anonymizers import DeleteModelAnonymizer
+from gdpr.loading import anonymizer_register
 
 
 class Command(BaseCommand):
@@ -51,7 +49,7 @@ class Command(BaseCommand):
 
     def handle(self, models, *args, **options):
         models = {v.strip().lower() for v in models.split(',')} if models else None
-        for obj_anonymizer in list(get_anonymizers()):
+        for obj_anonymizer in list(anonymizer_register()):
             model = obj_anonymizer.Meta.model
             if not models or self._get_full_model_name(model) in models:
                 self._anonymize(obj_anonymizer, model)

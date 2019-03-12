@@ -1,17 +1,24 @@
+from datetime import datetime
+from typing import Iterable, Optional, TYPE_CHECKING, Type
+
+from chamber.models import SmartModel
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.db import models
+from django.db import models, transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
-from chamber.models import SmartModel
+from .loading import purpose_register
 
-from .purposes.default import purposes_map
+if TYPE_CHECKING:
+    from gdpr.purposes.default import AbstractPurpose
 
 
 class LegalReasonManager(models.Manager):
 
-    def create_consent(self, purpose_slug, source_object, issued_at=None, tag=None, related_objects=None):
+    def create_consent(self, purpose_slug: str, source_object, issued_at: Optional[datetime] = None,
+                       tag: Optional[str] = None, related_objects: Optional[Iterable[Type[models.Model]]] = None):
         """
         Create (or update, if it exist) a LegalReason with purpose slug for concrete object instance
 
@@ -25,7 +32,10 @@ class LegalReasonManager(models.Manager):
         Returns:
             Legal Reason: LegalReason object
         """
-        purpose = purposes_map[purpose_slug]
+        try:
+            purpose = purpose_register[purpose_slug]
+        except KeyError:
+            raise KeyError('Purpose with slug {} does not exits'.format(purpose_slug))
         issued_at = issued_at or timezone.now()
 
         legal_reason, created = LegalReason.objects.get_or_create(
@@ -37,13 +47,12 @@ class LegalReasonManager(models.Manager):
                 'expires_at': issued_at + purpose.expiration_timedelta,
                 'tag': tag,
                 'is_active': True
-                }
-            )
+            }
+        )
 
         if not created:
             legal_reason.change_and_save(expires_at=timezone.now() + purpose.expiration_timedelta, tag=tag,
-                                         is_active=True
-            )
+                                         is_active=True)
 
         for related_object in related_objects or ():
             legal_reason.related_objects.update_or_create(
@@ -53,18 +62,19 @@ class LegalReasonManager(models.Manager):
 
         return legal_reason
 
-    def deactivate_consent(self, purpose_slug, source_object):
+    def expire_consent(self, purpose_slug: str, source_object):
         """
-        Deactivate/Remove consent (Leagal reason) for source_object, purpose_slug combination
+        Deactivate/Remove consent (Legal reason) for source_object, purpose_slug combination
 
         Args:
             purpose_slug: Purpose slug to deactivate consent for
             source_object: Source object to deactivate consent for
         """
-        LegalReason.objects.filter_source_instance_active_non_expired(source_object).filter(
-            purpose_slug=purpose_slug).update(is_active=False)
+        for reason in LegalReason.objects.filter_source_instance_active_non_expired_purpose(source_object,
+                                                                                            purpose_slug):
+            reason.expire()
 
-    def exists_valid_consent(self, purpose_slug, source_object):
+    def exists_valid_consent(self, purpose_slug: str, source_object):
         """
         Returns True if source_object has valid (ie. active and non-expired) consent (Legal Reason)
 
@@ -72,17 +82,30 @@ class LegalReasonManager(models.Manager):
             purpose_slug: Purpose_slug to check consent for
             source_object: Source object to check consent for
         """
-        return LegalReason.objects.filter_source_instance_active_non_expired(
-            source_object).filter(purpose_slug=purpose_slug).exists()
+        return LegalReason.objects.filter_source_instance_active_non_expired_purpose(
+            source_object, purpose_slug).exists()
+
+    def expire_old_consents(self):
+        """
+        Anonymize and expire consents which have past their `expires_at`.
+        """
+        for reason in LegalReason.objects.filter_active_and_expired():
+            reason.expire()
 
 
 class LegalReasonQuerySet(models.QuerySet):
 
     def filter_non_expired(self):
-        return self.filter(expires_at__gte=timezone.now())
+        return self.filter(Q(expires_at__gte=timezone.now()) | Q(expires_at=None))
+
+    def filter_expired(self):
+        return self.filter(expires_at__lte=timezone.now())
 
     def filter_active_and_non_expired(self):
         return self.filter(is_active=True).filter_non_expired()
+
+    def filter_active_and_expired(self):
+        return self.filter(is_active=True).filter_expired()
 
     def filter_source_instance(self, source_object):
         return self.filter(source_object_content_type=ContentType.objects.get_for_model(source_object.__class__),
@@ -91,9 +114,12 @@ class LegalReasonQuerySet(models.QuerySet):
     def filter_source_instance_active_non_expired(self, source_object):
         return self.filter_source_instance(source_object).filter_active_and_non_expired()
 
+    def filter_source_instance_active_non_expired_purpose(self, source_object, purpose_slug: str):
+        return self.filter_source_instance(source_object).filter_active_and_non_expired().filter(
+            purpose_slug=purpose_slug)
+
 
 class LegalReason(SmartModel):
-
     objects = LegalReasonManager.from_queryset(LegalReasonQuerySet)()
 
     issued_at = models.DateTimeField(
@@ -103,8 +129,8 @@ class LegalReason(SmartModel):
     )
     expires_at = models.DateTimeField(
         verbose_name=_('expires at'),
-        null=False,
-        blank=False,
+        null=True,
+        blank=True,
         db_index=True
     )
     tag = models.CharField(
@@ -121,10 +147,6 @@ class LegalReason(SmartModel):
         verbose_name=_('purpose'),
         null=False,
         blank=False,
-        choices=(
-            (purpose_slug, purpose_class.name)
-            for purpose_slug, purpose_class in purposes_map.items()
-        ),
         max_length=100,
         db_index=True
     )
@@ -132,7 +154,8 @@ class LegalReason(SmartModel):
         ContentType,
         verbose_name=_('source object content type'),
         null=False,
-        blank=False
+        blank=False,
+        on_delete=models.DO_NOTHING
     )
     source_object_id = models.TextField(
         verbose_name=_('source object ID'),
@@ -144,11 +167,36 @@ class LegalReason(SmartModel):
     )
 
     @property
-    def purpose(self):
-        return purposes_map.get(self.purpose_slug, None)
+    def purpose(self) -> Type["AbstractPurpose"]:
+        return purpose_register.get(self.purpose_slug, None)
+
+    def _anonymize_obj(self, *args, **kwargs):
+        purpose_register[self.purpose_slug]().anonymize_obj(self.source_object, self, *args, **kwargs)
+
+    def _deanonymize_obj(self, *args, **kwargs):
+        purpose_register[self.purpose_slug]().deanonymize_obj(self.source_object, *args, **kwargs)
+
+    def _expirement(self):
+        """Anonymize obj and set `is_active=False`."""
+        with transaction.atomic():
+            self._anonymize_obj()
+            self.is_active = False
+            self.save()
+
+    def expire(self):
+        """Set `expires_at` to now and call `expirement`."""
+        self.expires_at = timezone.now()
+        self._expirement()
+
+    def renew(self):
+        with transaction.atomic():
+            self.expires_at = timezone.now() + purpose_register[self.purpose_slug]().expiration_timedelta
+            self.is_active = True
+            self.save()
+            self._deanonymize_obj()
 
     def __str__(self):
-        return '{purpose_slug}'.format(purpose_slug=self.get_purpose_slug_display())
+        return f'{self.purpose.name}'
 
     class Meta:
         verbose_name = _('legal reason')
@@ -158,19 +206,20 @@ class LegalReason(SmartModel):
 
 
 class LegalReasonRelatedObject(SmartModel):
-
     legal_reason = models.ForeignKey(
         LegalReason,
         verbose_name=_('legal reason'),
         null=False,
         blank=False,
-        related_name='related_objects'
+        related_name='related_objects',
+        on_delete=models.CASCADE
     )
     object_content_type = models.ForeignKey(
         ContentType,
         verbose_name=_('related object content type'),
         null=False,
-        blank=False
+        blank=False,
+        on_delete=models.DO_NOTHING
     )
     object_id = models.TextField(
         verbose_name=_('related object ID'),
@@ -192,7 +241,18 @@ class LegalReasonRelatedObject(SmartModel):
         unique_together = ('legal_reason', 'object_content_type', 'object_id')
 
 
+class AnonymizedDataQuerySet(models.QuerySet):
+
+    def filter_source_instance_active(self, source_object):
+        return self.filter(
+            content_type=ContentType.objects.get_for_model(source_object.__class__),
+            object_id=str(source_object.pk),
+            is_active=True
+        )
+
+
 class AnonymizedData(SmartModel):
+    objects = models.Manager.from_queryset(AnonymizedDataQuerySet)()
 
     field = models.CharField(
         verbose_name=_('anonymized field name'),
@@ -204,7 +264,8 @@ class AnonymizedData(SmartModel):
         ContentType,
         verbose_name=_('related object content type'),
         null=False,
-        blank=False
+        blank=False,
+        on_delete=models.DO_NOTHING
     )
     object_id = models.TextField(
         verbose_name=_('related object ID'),
@@ -222,7 +283,8 @@ class AnonymizedData(SmartModel):
         LegalReason,
         verbose_name=_('expired reason'),
         null=True,
-        blank=True
+        blank=True,
+        on_delete=models.SET_NULL
     )
 
     def __str__(self):
@@ -232,3 +294,4 @@ class AnonymizedData(SmartModel):
         verbose_name = _('anonymized data')
         verbose_name_plural = _('anonymized data')
         ordering = ('-created_at',)
+        unique_together = ('content_type', 'object_id', 'field')
