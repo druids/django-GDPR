@@ -115,6 +115,7 @@ class CharFieldAnonymizer(FieldAnonymizer):
     """
 
     transliterate = False
+    empty_values = [None, '']
 
     def __init__(self, *args, transliterate: bool = False, **kwargs):
         self.transliterate = transliterate
@@ -128,6 +129,8 @@ class CharFieldAnonymizer(FieldAnonymizer):
 
 
 class EmailFieldAnonymizer(FieldAnonymizer):
+
+    empty_values = [None, '']
 
     def get_encrypted_value(self, value, encryption_key: str):
         return encrypt_email_address(encryption_key, value)
@@ -179,6 +182,8 @@ class IBANFieldAnonymizer(FieldAnonymizer):
     Field anonymizer for International Bank Account Number.
     """
 
+    empty_values = [None, '']
+
     def get_decrypted_value(self, value: Any, encryption_key: str):
         return translate_iban(encryption_key, value)
 
@@ -190,6 +195,8 @@ class JSONFieldAnonymizer(FieldAnonymizer):
     """
     Anonymization for JSONField.
     """
+
+    empty_values = [None, '']
 
     def get_numeric_encryption_key(self, encryption_key: str, value: Union[int, float] = None) -> int:
         if value is None:
@@ -238,7 +245,9 @@ class StaticValueFieldAnonymizer(FieldAnonymizer):
     """
     Static value anonymizer replaces value with defined static value.
     """
+
     is_reversible = False
+    empty_values = [None, '']
 
     def __init__(self, value: Any, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -252,6 +261,8 @@ class SiteIDUsernameFieldAnonymizer(FieldAnonymizer):
     """
     Encrypts username in format 1:foo@bar.com
     """
+
+    empty_values = [None, '']
 
     def get_encrypted_value(self, value, encryption_key: str):
         split = value.split(':', 1)
