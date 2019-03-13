@@ -5,7 +5,8 @@ from django.utils.translation import gettext as _
 
 __all__ = ('encrypt_text', 'decrypt_text', 'encrypt_email_address', 'decrypt_email_address', 'numerize_key', 'NUMBERS',
            'LETTERS_UPPER', 'LETTERS_ONLY', 'ALL_CHARS', 'SYMBOLS', 'LETTERS_ALL', 'LETTERS_ALL_WITH_SPACE',
-           'NUMBERS_WITHOUT_ZERO', 'JSON_SAFE_CHARS', 'translate_text', 'translate_email_address', 'translate_iban')
+           'NUMBERS_WITHOUT_ZERO', 'JSON_SAFE_CHARS', 'translate_text', 'translate_email_address', 'translate_iban',
+           'translate_number')
 
 # Vigenere like Cipher (Polyalphabetic Substitution Cipher)
 
