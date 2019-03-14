@@ -1,4 +1,4 @@
-from typing import Any, Iterable, List, Optional, Union
+from typing import Any, Iterable, List, Optional, Union, Type
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model
@@ -12,11 +12,13 @@ class RelationAnonymizer:
     Base class for Anonymizers defining special relations.
     """
 
+    model: Type[Model]
+
     def get_related_objects(self, obj: Model) -> Iterable:
         raise NotImplementedError
 
-    def get_related_model(self) -> Model:
-        raise NotImplementedError
+    def get_related_model(self) -> Type[Model]:
+        return self.model
 
 
 class FieldAnonymizer:
