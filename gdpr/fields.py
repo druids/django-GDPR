@@ -4,7 +4,6 @@ from django.db.models import Model
 
 from gdpr.loading import anonymizer_register
 
-
 FieldMatrix = Union[str, Tuple[Any, ...]]
 FieldList = Union[List[str], str]
 RelatedFieldDict = Dict[str, "Fields"]

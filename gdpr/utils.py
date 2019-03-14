@@ -1,7 +1,7 @@
 from typing import Any, Type
 
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import Model
+from django.db.models import Model, QuerySet
 
 
 def str_to_class(class_string: str) -> Any:
@@ -49,7 +49,7 @@ Enable support for druids reversion fork
 """
 
 
-def get_reversion_versions(obj):
+def get_reversion_versions(obj: Any) -> QuerySet:
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
 
