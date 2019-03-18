@@ -332,7 +332,7 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
                     base_encryption_key=self._get_encryption_key(obj, name),
                     anonymization=anonymization
                 )
-            else:
+            elif related_attribute is not None:
                 warnings.warn(f'Model anonymization discovered unreachable field {name} on model'
                               f'{obj.__class__.__name__} on obj {obj} with pk {obj.pk}')
 
