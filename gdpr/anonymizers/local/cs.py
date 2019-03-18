@@ -300,7 +300,7 @@ class CzechPersonalID:
         if numeric_key % 2 == 0:
             self.is_male = not self.is_male
 
-        self.date -= datetime.timedelta(days=numeric_key)
+        self.date -= datetime.timedelta(days=numeric_key + 1)
         self.day_index = int(encrypt_text(str(numeric_key), str(self.day_index), NUMBERS))
 
         if self.is_pre_1954:
@@ -316,7 +316,7 @@ class CzechPersonalID:
         if numeric_key % 2 == 0:
             self.is_male = not self.is_male
 
-        self.date += datetime.timedelta(days=numeric_key)
+        self.date += datetime.timedelta(days=numeric_key + 1)
         self.day_index = int(decrypt_text(str(numeric_key), str(self.day_index), NUMBERS))
 
         if self.is_pre_1954:
