@@ -265,6 +265,37 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     def deanonymize_qs(self, qs: QuerySet) -> None:
         raise NotImplementedError()
 
+    def update_related_fields(self, parsed_fields: Fields, obj: Model, legal_reason: Optional[LegalReason] = None,
+                              purpose: Optional["AbstractPurpose"] = None, anonymization: bool = True):
+        for name, related_fields in parsed_fields.related_fields.items():
+            related_attribute = getattr(obj, name, None)
+            related_metafield = get_field_or_none(self.model, name)
+            if related_attribute is None and related_metafield is None:
+                if self.is_generic_relation(getattr(self, name, None)):
+                    objs = getattr(self, name).get_related_objects(obj)
+                    for related_obj in objs:
+                        related_fields.anonymizer.update_obj(
+                            related_obj, legal_reason, purpose, related_fields,
+                            base_encryption_key=self._get_encryption_key(obj, name),
+                            anonymization=anonymization
+                        )
+            elif related_metafield.one_to_many or related_metafield.many_to_many:
+                for related_obj in related_attribute.all():
+                    related_fields.anonymizer.update_obj(
+                        related_obj, legal_reason, purpose, related_fields,
+                        base_encryption_key=self._get_encryption_key(obj, name),
+                        anonymization=anonymization
+                    )
+            elif (related_metafield.many_to_one or related_metafield.one_to_one) and related_attribute is not None:
+                related_fields.anonymizer.update_obj(
+                    related_attribute, legal_reason, purpose, related_fields,
+                    base_encryption_key=self._get_encryption_key(obj, name),
+                    anonymization=anonymization
+                )
+            elif related_attribute is not None:
+                warnings.warn(f'Model anonymization discovered unreachable field {name} on model'
+                              f'{obj.__class__.__name__} on obj {obj} with pk {obj.pk}')
+
     def update_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
                    purpose: Optional["AbstractPurpose"] = None,
                    fields: Union[Fields, FieldMatrix] = '__ALL__',
@@ -307,34 +338,7 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
         else:
             self.perform_update(obj, update_dict, legal_reason, anonymization=anonymization)
 
-        for name, related_fields in parsed_fields.related_fields.items():
-            related_attribute = getattr(obj, name, None)
-            related_metafield = get_field_or_none(self.model, name)
-            if related_attribute is None and related_metafield is None:
-                if self.is_generic_relation(getattr(self, name, None)):
-                    objs = getattr(self, name).get_related_objects(obj)
-                    for related_obj in objs:
-                        related_fields.anonymizer.update_obj(
-                            related_obj, legal_reason, purpose, related_fields,
-                            base_encryption_key=self._get_encryption_key(obj, name),
-                            anonymization=anonymization
-                        )
-            elif related_metafield.one_to_many or related_metafield.many_to_many:
-                for related_obj in related_attribute.all():
-                    related_fields.anonymizer.update_obj(
-                        related_obj, legal_reason, purpose, related_fields,
-                        base_encryption_key=self._get_encryption_key(obj, name),
-                        anonymization=anonymization
-                    )
-            elif (related_metafield.many_to_one or related_metafield.one_to_one) and related_attribute is not None:
-                related_fields.anonymizer.update_obj(
-                    related_attribute, legal_reason, purpose, related_fields,
-                    base_encryption_key=self._get_encryption_key(obj, name),
-                    anonymization=anonymization
-                )
-            elif related_attribute is not None:
-                warnings.warn(f'Model anonymization discovered unreachable field {name} on model'
-                              f'{obj.__class__.__name__} on obj {obj} with pk {obj.pk}')
+        self.update_related_fields(parsed_fields, obj, legal_reason, purpose, anonymization)
 
     def anonymize_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
                       purpose: Optional["AbstractPurpose"] = None,
@@ -361,14 +365,30 @@ class ModelAnonymizer(ModelAnonymizerBase):
 class DeleteModelAnonymizer(ModelAnonymizer):
     """
     The simpliest anonymization class that is used for removing whole input queryset.
+
+    For anonymization add `__SELF__` to the FieldMatrix.
     """
 
     can_anonymize_qs = True
 
-    def anonymize_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
-                      purpose: Optional["AbstractPurpose"] = None,
-                      fields: Union[Fields, FieldMatrix] = '__ALL__', base_encryption_key: Optional[str] = None):
-        obj.__class__.objects.filter(pk=obj.pk).delete()
+    DELETE_FIELD_NAME = '__SELF__'
+
+    def update_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
+                   purpose: Optional["AbstractPurpose"] = None,
+                   fields: Union[Fields, FieldMatrix] = '__ALL__',
+                   base_encryption_key: Optional[str] = None,
+                   anonymization: bool = True):
+        parsed_fields: Fields = Fields(fields, obj.__class__) if not isinstance(fields, Fields) else fields
+
+        super().update_obj(obj, legal_reason, purpose, parsed_fields, base_encryption_key, anonymization)
+
+        if self.DELETE_FIELD_NAME in parsed_fields.local_fields and anonymization is True:
+            obj.__class__.objects.filter(pk=obj.pk).delete()
+
+            if self.anonymize_reversion(obj):
+                from reversion.models import Version
+                from gdpr.utils import get_reversion_versions
+                get_reversion_versions(obj).delete()
 
     def anonymize_qs(self, qs):
         qs.delete()
