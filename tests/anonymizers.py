@@ -1,6 +1,6 @@
 from gdpr import anonymizers
 from gdpr.anonymizers.local import cs
-from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment, Avatar
+from tests.models import Account, Address, ContactForm, Customer, Email, Note, Payment, Avatar, ChildE
 
 
 class CustomerAnonymizer(anonymizers.ModelAnonymizer):
@@ -78,3 +78,15 @@ class AvatarAnonymizer(anonymizers.ModelAnonymizer):
 
     class Meta:
         model = Avatar
+
+
+class ChildEAnonymizer(anonymizers.ModelAnonymizer):
+    name = anonymizers.CharFieldAnonymizer()
+    first_name = anonymizers.CharFieldAnonymizer()
+    last_name = anonymizers.CharFieldAnonymizer()
+    birth_date = anonymizers.DateFieldAnonymizer()
+    note = anonymizers.CharFieldAnonymizer()
+
+    class Meta:
+        model = ChildE
+        anonymize_reversion = True
