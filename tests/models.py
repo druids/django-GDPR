@@ -91,6 +91,27 @@ class Avatar(AnonymizationModel):
     image = models.FileField()
 
 
+class TopParentA(AnonymizationModel):
+    name = models.CharField(max_length=250)
+
+
+class ParentB(TopParentA):
+    birth_date = models.DateField()
+
+
+class ParentC(ParentB):
+    first_name = models.CharField(max_length=250)
+
+
+class ExtraParentD(AnonymizationModel):
+    id_d = models.AutoField(primary_key=True, editable=False)
+    note = models.CharField(max_length=250)
+
+
+class ChildE(ParentC, ExtraParentD):
+    last_name = models.CharField(max_length=250)
+
+
 if is_reversion_installed():
     from reversion import revisions as reversion
 
@@ -101,3 +122,8 @@ if is_reversion_installed():
     reversion.register(Payment)
     reversion.register(ContactForm)
     reversion.register(Note)
+    reversion.register(TopParentA)
+    reversion.register(ParentB, follow=('topparenta_ptr',))
+    reversion.register(ParentC, follow=('parentb_ptr',))
+    reversion.register(ExtraParentD)
+    reversion.register(ChildE, follow=('parentc_ptr', 'extraparentd_ptr'))

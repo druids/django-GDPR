@@ -11,13 +11,7 @@ env:
   - DJANGO_VERSION=2.0.10 REVERSION='django-reversion==3.0.3'
   - DJANGO_VERSION=1.11.18 REVERSION=
   - DJANGO_VERSION=1.11.18 REVERSION='django-reversion==3.0.3'
-  - DJANGO_VERSION=1.10.8 REVERSION=
-  - DJANGO_VERSION=1.10.8 REVERSION='django-reversion==2.0.13'
-  - DJANGO_VERSION=1.10.8 REVERSION=https://github.com/druids/django-reversion/tarball/2.0.14#egg=django-reversion-2.0.14
-  - DJANGO_VERSION=1.9.13 REVERSION=
-  - DJANGO_VERSION=1.9.13 REVERSION='django-reversion==2.0.13'
-  - DJANGO_VERSION=1.8.19 REVERSION=
-  - DJANGO_VERSION=1.8.19 REVERSION='django-reversion==2.0.13'
+  - DJANGO_VERSION=1.11.18 REVERSION=https://github.com/druids/django-reversion/tarball/2.0.14#egg=django-reversion-2.0.14
 # command to install dependencies
 install:
   - sed -i '/django==/d' ./test_requirements.txt
