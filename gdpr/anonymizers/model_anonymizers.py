@@ -408,15 +408,21 @@ class DeleteModelAnonymizer(ModelAnonymizer):
                    anonymization: bool = True):
         parsed_fields: Fields = Fields(fields, obj.__class__) if not isinstance(fields, Fields) else fields
 
-        super().update_obj(obj, legal_reason, purpose, parsed_fields, base_encryption_key, anonymization)
-
         if self.DELETE_FIELD_NAME in parsed_fields.local_fields and anonymization is True:
+            self.update_related_fields(parsed_fields, obj, legal_reason, purpose, anonymization)
+
             obj.__class__.objects.filter(pk=obj.pk).delete()
 
             if self.anonymize_reversion(obj):
                 from reversion.models import Version
                 from gdpr.utils import get_reversion_versions
                 get_reversion_versions(obj).delete()
+
+        elif self.DELETE_FIELD_NAME in parsed_fields.local_fields:
+            parsed_fields.local_fields = [i for i in parsed_fields.local_fields if i != self.DELETE_FIELD_NAME]
+            super().update_obj(obj, legal_reason, purpose, parsed_fields, base_encryption_key, anonymization)
+        else:
+            super().update_obj(obj, legal_reason, purpose, parsed_fields, base_encryption_key, anonymization)
 
     def anonymize_qs(self, qs):
         qs.delete()
