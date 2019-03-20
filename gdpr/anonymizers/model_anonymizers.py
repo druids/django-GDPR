@@ -14,7 +14,7 @@ from django.db.models import Model, QuerySet
 from gdpr.anonymizers.base import FieldAnonymizer, RelationAnonymizer
 from gdpr.fields import Fields
 from gdpr.models import AnonymizedData, LegalReason
-from gdpr.utils import get_field_or_none
+from gdpr.utils import get_field_or_none, get_reversion_version_model
 
 if TYPE_CHECKING:
     from gdpr.purposes.default import AbstractPurpose
@@ -252,11 +252,11 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
         for field, value in update_data.items():
             setattr(local_obj, field, value)
         if hasattr(revisions, '_get_options'):
-            version_options = revisions._get_options(version._model)
+            version_options = revisions._get_options(get_reversion_version_model(version))
             version_format = version_options.format
             version_fields = version_options.fields
         else:
-            version_adapter = revisions.get_adapter(version._model)
+            version_adapter = revisions.get_adapter(get_reversion_version_model(version))
             version_format = version_adapter.get_serialization_format()
             version_fields = list(version_adapter.get_fields_to_serialize())
         version.serialized_data = serializers.serialize(

@@ -59,6 +59,13 @@ def get_reversion_versions(obj: Any) -> QuerySet:
     return Version.objects.filter(content_type=content_type, object_id=obj.pk).order_by('id')
 
 
+def get_reversion_version_model(version) -> Type[Model]:
+    """Get object model of the version."""
+    if hasattr(version, '_model'):
+        return version._model
+    return version.content_type.model_class()
+
+
 def get_reversion_local_field_dict(obj):
     if hasattr(obj, '_local_field_dict'):
         return obj._local_field_dict
