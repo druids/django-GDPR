@@ -116,7 +116,7 @@ class LegalReasonQuerySet(models.QuerySet):
             'expires_at__lt': timezone.now()
         }
 
-        return self.filter(purpose_slug__in=purpose_slugs_retaining_data, **filter_keys)
+        return self.filter(is_active=True, purpose_slug__in=purpose_slugs_retaining_data, **filter_keys)
 
     def filter_non_expired(self):
         return self.filter(Q(expires_at__gte=timezone.now()) | Q(expires_at=None))

@@ -50,7 +50,7 @@ def check_uniqueness_and_keep_latest_active_legal_reason_related_object(apps, sc
     check_qs = LegalReasonRelatedObject.objects.values('legal_reason', 'object_content_type', 'object_id').annotate(
         lrro_count=Count('legal_reason')).filter(lrro_count__gt=1).order_by('-lrro_count').distinct()
 
-    for legal_reason_related_object in tqdm(check_qs.all()):
+    for legal_reason_related_object in tqdm(check_qs.all(), ncols=100):
         remove_duplicate_legal_reasons_relatives(apps, legal_reason_related_object['legal_reason'],
                                                  legal_reason_related_object['object_content_type'],
                                                  legal_reason_related_object['object_id']
