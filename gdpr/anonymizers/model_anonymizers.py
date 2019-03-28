@@ -342,29 +342,33 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
         else:
             raw_local_fields = [i for i in parsed_fields.local_fields if
                                 self.is_field_anonymized(obj, i) and self[i].get_is_reversible(obj)]
-        update_dict = {name: self.get_value_from_obj(self[name], obj, name, anonymization) for name in raw_local_fields}
 
-        if self.anonymize_reversion(obj):
-            from reversion.models import Version
-            from gdpr.utils import get_reversion_local_field_dict
-            versions: List[Version] = self.get_reversion_versions(obj)
-            versions_update_dict = [
-                (
-                    version,
-                    {
-                        name: self.get_value_from_version(self[name], obj, version, name, anonymization=anonymization)
-                        for name in raw_local_fields
-                        if name in get_reversion_local_field_dict(version)
-                    }
+        if raw_local_fields:
+            update_dict = {
+                name: self.get_value_from_obj(self[name], obj, name, anonymization) for name in raw_local_fields
+            }
+            if self.anonymize_reversion(obj):
+                from reversion.models import Version
+                from gdpr.utils import get_reversion_local_field_dict
+                versions: List[Version] = self.get_reversion_versions(obj)
+                versions_update_dict = [
+                    (
+                        version,
+                        {
+                            name: self.get_value_from_version(self[name], obj, version, name,
+                                                              anonymization=anonymization)
+                            for name in raw_local_fields
+                            if name in get_reversion_local_field_dict(version)
+                        }
+                    )
+                    for version in versions
+                ]
+                self.perform_update_with_version(
+                    obj, update_dict, versions_update_dict, legal_reason,
+                    anonymization=anonymization
                 )
-                for version in versions
-            ]
-            self.perform_update_with_version(
-                obj, update_dict, versions_update_dict, legal_reason,
-                anonymization=anonymization
-            )
-        else:
-            self.perform_update(obj, update_dict, legal_reason, anonymization=anonymization)
+            else:
+                self.perform_update(obj, update_dict, legal_reason, anonymization=anonymization)
 
         self.update_related_fields(parsed_fields, obj, legal_reason, purpose, anonymization)
 

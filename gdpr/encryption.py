@@ -168,7 +168,7 @@ def translate_email_address(key: str, email: str, encrypt: bool = True, restrict
 
     """
     local, domain_tld = email.split("@")
-    domain, tld = domain_tld.split(".")
+    domain, tld = domain_tld.rsplit(".", 1)
     if not restricted_mode:
         return (f'{translate_text(key, local, encrypt, EMAIL_LOCAL_CHARS)}@'
                 f'{translate_text(key, domain, encrypt, DOMAIN_CHARS)}.{tld}')
