@@ -14,7 +14,7 @@ NUMBERS_WITHOUT_ZERO = '123456789'
 NUMBERS = '1234567890'
 LETTERS_ONLY = 'abcdefghijklmnopqrstuvwxyz'
 LETTERS_UPPER = LETTERS_ONLY.upper()
-LETTERS_ALL = LETTERS_ONLY + LETTERS_ONLY
+LETTERS_ALL = LETTERS_ONLY + LETTERS_UPPER
 LETTERS_ALL_WITH_SPACE = LETTERS_ALL + ' '
 SYMBOLS = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
 # Translators: You can add special characters of your language at the end
