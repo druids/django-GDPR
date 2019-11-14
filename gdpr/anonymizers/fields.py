@@ -153,7 +153,7 @@ class DecimalFieldAnonymizer(NumericFieldAnonymizer):
 
 class IntegerFieldAnonymizer(NumericFieldAnonymizer):
     """
-    Anonymization for CharField.
+    Anonymization for IntegerField.
     """
 
     def get_encrypted_value(self, value, encryption_key: str):
@@ -169,6 +169,8 @@ class IPAddressFieldAnonymizer(FieldAnonymizer):
 
     Works for both ipv4 and ipv6.
     """
+
+    empty_values = [None, '']
 
     def get_encrypted_value(self, value, encryption_key: str):
         return encrypt_ip(encryption_key, value)
