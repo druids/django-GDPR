@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING, Any, Dict, KeysView, List, Optional, Tuple, Ty
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model, Q
 
+from gdpr.enums import LegalReasonState
 from gdpr.fields import Fields
 from gdpr.loading import anonymizer_register, purpose_register
-
 
 if TYPE_CHECKING:
     from gdpr.models import LegalReason
@@ -70,7 +70,7 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
         anonymizer: "ModelAnonymizer" = anonymizer_register[obj_model]()
 
         # MultiLegalReason
-        other_legal_reasons = LegalReason.objects.filter_source_instance(obj).filter(is_active=True)
+        other_legal_reasons = LegalReason.objects.filter_source_instance(obj).filter(state=LegalReasonState.ACTIVE)
         if legal_reason:
             other_legal_reasons = other_legal_reasons.filter(~Q(pk=legal_reason.pk))
         if other_legal_reasons.count() == 0:

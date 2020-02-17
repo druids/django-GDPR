@@ -35,8 +35,8 @@ class AnonymizationModelMixin:
     def create_consent(self, purpose_slug: str, *args, **kwargs) -> LegalReason:
         return LegalReason.objects.create_consent(purpose_slug, self, *args, **kwargs)
 
-    def expire_consent(self, purpose_slug: str):
-        LegalReason.objects.expire_consent(purpose_slug, self)
+    def deactivate_consent(self, purpose_slug: str):
+        LegalReason.objects.deactivate_consent(purpose_slug, self)
 
     def delete(self, *args, **kwargs):
         """Cleanup anonymization metadata"""

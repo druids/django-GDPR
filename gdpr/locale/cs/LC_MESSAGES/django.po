@@ -1,0 +1,118 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-02-18 17:28+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n "
+"<= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;\n"
+
+#. Translators: You can add special characters of your language at the end
+#: encryption.py:21
+msgid ""
+" !\"#$%&'()*+,-./0123456789:;<=>?"
+"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+msgstr ""
+" !\"#$%&'()*+,-./0123456789:;<=>?"
+"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+
+#. Translators: You can add special characters of your language at the end
+#: encryption.py:23
+msgid ""
+" !#$%&()*+,-./0123456789:;<=>?"
+"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+msgstr ""
+" !#$%&()*+,-./0123456789:;<=>?"
+"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+
+#: enums.py:8
+msgid "Active"
+msgstr "Aktivní"
+
+#: enums.py:9
+msgid "Expired"
+msgstr "Expirovaný"
+
+#: enums.py:10
+msgid "Deactivated"
+msgstr "Deaktivovaný"
+
+#: models.py:174
+msgid "issued at"
+msgstr "přiřazen"
+
+#: models.py:179
+msgid "expires at"
+msgstr "datum expirace"
+
+#: models.py:185
+msgid "tag"
+msgstr "tag"
+
+#: models.py:191
+msgid "state"
+msgstr "stav"
+
+#: models.py:198
+msgid "purpose"
+msgstr "účel"
+
+#: models.py:206
+msgid "source object content type"
+msgstr "typ zrojového objektu"
+
+#: models.py:212
+msgid "source object ID"
+msgstr "ID zdrojového objektu"
+
+#: models.py:221 models.py:267
+msgid "legal reason"
+msgstr "legální účel držení dat"
+
+#: models.py:222
+msgid "legal reasons"
+msgstr "legální účely držení dat"
+
+#: models.py:275 models.py:321
+msgid "related object content type"
+msgstr "typ vztaženého objektu"
+
+#: models.py:281 models.py:327
+msgid "related object ID"
+msgstr "ID vztaženého objektu"
+
+#: models.py:291
+msgid "legal reason related object"
+msgstr "vztažený objekt legálního účelu držení dat"
+
+#: models.py:292
+msgid "legal reasons related objects"
+msgstr "vztažené objekty legálních účelů držení dat"
+
+#: models.py:314
+msgid "anonymized field name"
+msgstr "název anonymizovaného pole"
+
+#: models.py:335
+msgid "is active"
+msgstr "aktivní"
+
+#: models.py:340
+msgid "expired reason"
+msgstr "důvod expirace"
+
+#: models.py:347 models.py:348
+msgid "anonymized data"
+msgstr "anonymizovaná data"

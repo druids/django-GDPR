@@ -143,7 +143,7 @@ customer.save()
 LegalReason.objects.create_consent(FIRST_AND_LAST_NAME_SLUG, customer)
 
 # And now you can revoke it
-LegalReason.objects.expire_consent(FIRST_AND_LAST_NAME_SLUG, customer)
+LegalReason.objects.deactivate_consent(FIRST_AND_LAST_NAME_SLUG, customer)
 ```
 
 In case your model uses the `AnonymizationModelMixin` or `AnonymizationModel` you can create and revoke consents even
@@ -160,7 +160,7 @@ customer.save()
 customer.create_consent(FIRST_AND_LAST_NAME_SLUG)
 
 # And now you can revoke it
-customer.expire_consent(FIRST_AND_LAST_NAME_SLUG)
+customer.deactivate_consent(FIRST_AND_LAST_NAME_SLUG)
 ```
 
 

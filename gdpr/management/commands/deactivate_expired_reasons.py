@@ -14,4 +14,4 @@ class Command(BaseCommand):
 
         self.stdout.write('Anonymize expired data of expired legal reasons')
         for legal_reason in tqdm(LegalReason.objects.filter_expired_retaining_data_in_last_days(), ncols=100):
-            legal_reason._expirement()
+            legal_reason.expire()
