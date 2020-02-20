@@ -1,9 +1,17 @@
+import os
+
 from gdpr.version import get_version
 from setuptools import find_packages, setup
 
 
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+
 setup(
     name='django-GDPR',
+    long_description=read('README.md'),
+    long_description_content_type='text/markdown',
     version=get_version(),
     description='Library for GDPR implementation',
     author='Druids',
@@ -36,6 +44,7 @@ setup(
         'tqdm>=4.28.1',
         'pyaes>=1.6.1',
         'unidecode',
+        'django-choice-enumfields>=1.0.3',
     ],
-    zip_safe=False
+    zip_safe=False,
 )

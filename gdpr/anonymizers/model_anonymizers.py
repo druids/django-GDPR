@@ -161,7 +161,8 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
             AnonymizedData.objects.create(object=obj, field=name, expired_reason=legal_reason)
         else:
             AnonymizedData.objects.filter(
-                field=name, is_active=True, content_type=self.content_type, object_id=str(obj.pk)).delete()
+                field=name, is_active=True, content_type=self.content_type, object_id=str(obj.pk)
+            ).delete()
 
     def mark_field_as_anonymized(self, obj: Model, name: str, legal_reason: Optional[LegalReason] = None):
         self.update_field_as_anonymized(obj, name, legal_reason, anonymization=True)

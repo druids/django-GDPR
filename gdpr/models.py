@@ -12,6 +12,9 @@ from chamber.models import SmartModel
 
 from typing import TYPE_CHECKING, Iterable, Optional, Type
 
+from enumfields import NumEnumField
+
+from .enums import LegalReasonState
 from .loading import purpose_register
 
 
@@ -50,13 +53,16 @@ class LegalReasonManager(models.Manager):
                 'issued_at': issued_at,
                 'expires_at': issued_at + purpose.expiration_timedelta,
                 'tag': tag,
-                'is_active': True
+                'state': LegalReasonState.ACTIVE,
             }
         )
 
         if not created:
-            legal_reason.change_and_save(expires_at=timezone.now() + purpose.expiration_timedelta, tag=tag,
-                                         is_active=True)
+            legal_reason.change_and_save(
+                expires_at=timezone.now() + purpose.expiration_timedelta,
+                tag=tag,
+                state=LegalReasonState.ACTIVE
+            )
 
         for related_object in related_objects or ():
             legal_reason.related_objects.update_or_create(
@@ -66,7 +72,7 @@ class LegalReasonManager(models.Manager):
 
         return legal_reason
 
-    def expire_consent(self, purpose_slug: str, source_object):
+    def deactivate_consent(self, purpose_slug: str, source_object):
         """
         Deactivate/Remove consent (Legal reason) for source_object, purpose_slug combination
 
@@ -76,7 +82,7 @@ class LegalReasonManager(models.Manager):
         """
         for reason in LegalReason.objects.filter_source_instance_active_non_expired_purpose(source_object,
                                                                                             purpose_slug):
-            reason.expire()
+            reason.deactivate()
 
     def exists_valid_consent(self, purpose_slug: str, source_object):
         """
@@ -88,6 +94,19 @@ class LegalReasonManager(models.Manager):
         """
         return LegalReason.objects.filter_source_instance_active_non_expired_purpose(
             source_object, purpose_slug).exists()
+
+    def exists_deactivated_consent(self, purpose_slug: str, source_object):
+        """
+        Returns True if source_object has deactivated consent (Legal Reason)
+
+        Args:
+            purpose_slug: Purpose_slug to check consent for
+            source_object: Source object to check consent for
+        """
+        return self.filter_source_instance(source_object).filter(
+            state=LegalReasonState.DEACTIVATED,
+            purpose_slug=purpose_slug
+        ).exists()
 
     def expire_old_consents(self):
         """
@@ -116,7 +135,7 @@ class LegalReasonQuerySet(models.QuerySet):
             'expires_at__lt': timezone.now()
         }
 
-        return self.filter(is_active=True, purpose_slug__in=purpose_slugs_retaining_data, **filter_keys)
+        return self.filter(state=LegalReasonState.ACTIVE, purpose_slug__in=purpose_slugs_retaining_data, **filter_keys)
 
     def filter_non_expired(self):
         return self.filter(Q(expires_at__gte=timezone.now()) | Q(expires_at=None))
@@ -124,22 +143,28 @@ class LegalReasonQuerySet(models.QuerySet):
     def filter_expired(self):
         return self.filter(expires_at__lte=timezone.now())
 
+    def filter_active(self):
+        return self.filter(state=LegalReasonState.ACTIVE)
+
     def filter_active_and_non_expired(self):
-        return self.filter(is_active=True).filter_non_expired()
+        return self.filter_active().filter_non_expired()
 
     def filter_active_and_expired(self):
-        return self.filter(is_active=True).filter_expired()
+        return self.filter_active().filter_expired()
 
     def filter_source_instance(self, source_object):
-        return self.filter(source_object_content_type=ContentType.objects.get_for_model(source_object.__class__),
-                           source_object_id=str(source_object.pk))
+        return self.filter(
+            source_object_content_type=ContentType.objects.get_for_model(source_object.__class__),
+            source_object_id=str(source_object.pk)
+        )
 
     def filter_source_instance_active_non_expired(self, source_object):
         return self.filter_source_instance(source_object).filter_active_and_non_expired()
 
     def filter_source_instance_active_non_expired_purpose(self, source_object, purpose_slug: str):
         return self.filter_source_instance(source_object).filter_active_and_non_expired().filter(
-            purpose_slug=purpose_slug)
+            purpose_slug=purpose_slug
+        )
 
 
 class LegalReason(SmartModel):
@@ -162,9 +187,12 @@ class LegalReason(SmartModel):
         blank=True,
         max_length=100
     )
-    is_active = models.BooleanField(
-        verbose_name=_('is active'),
-        default=True
+    state = NumEnumField(
+        verbose_name=_('state'),
+        null=False,
+        blank=False,
+        enum=LegalReasonState,
+        default=LegalReasonState.ACTIVE
     )
     purpose_slug = models.CharField(
         verbose_name=_('purpose'),
@@ -189,6 +217,19 @@ class LegalReason(SmartModel):
         'source_object_content_type', 'source_object_id'
     )
 
+    class Meta:
+        verbose_name = _('legal reason')
+        verbose_name_plural = _('legal reasons')
+        ordering = ('-created_at',)
+        unique_together = ('purpose_slug', 'source_object_content_type', 'source_object_id')
+
+    def __str__(self):
+        return f'{self.purpose.name}'
+
+    @property
+    def is_active(self):
+        return self.state == LegalReasonState.ACTIVE
+
     @property
     def purpose(self) -> Type["AbstractPurpose"]:
         return purpose_register.get(self.purpose_slug, None)
@@ -199,33 +240,25 @@ class LegalReason(SmartModel):
     def _deanonymize_obj(self, *args, **kwargs):
         purpose_register[self.purpose_slug]().deanonymize_obj(self.source_object, *args, **kwargs)
 
-    def _expirement(self):
-        """Anonymize obj and set `is_active=False`."""
+    def expire(self):
+        """Anonymize obj and set state as expired."""
         with transaction.atomic():
             self._anonymize_obj()
-            self.is_active = False
-            self.save()
+            self.change_and_save(state=LegalReasonState.EXPIRED)
 
-    def expire(self):
-        """Set `expires_at` to now and call `expirement`."""
-        self.expires_at = timezone.now()
-        self._expirement()
+    def deactivate(self):
+        """Deactivate obj and run anonymization."""
+        with transaction.atomic():
+            self._anonymize_obj()
+            self.change_and_save(state=LegalReasonState.DEACTIVATED)
 
     def renew(self):
         with transaction.atomic():
-            self.expires_at = timezone.now() + purpose_register[self.purpose_slug]().expiration_timedelta
-            self.is_active = True
-            self.save()
+            self.change_and_save(
+                expires_at=timezone.now() + purpose_register[self.purpose_slug]().expiration_timedelta,
+                state=LegalReasonState.ACTIVE
+            )
             self._deanonymize_obj()
-
-    def __str__(self):
-        return f'{self.purpose.name}'
-
-    class Meta:
-        verbose_name = _('legal reason')
-        verbose_name_plural = _('legal reasons')
-        ordering = ('-created_at',)
-        unique_together = ('purpose_slug', 'source_object_content_type', 'source_object_id')
 
 
 class LegalReasonRelatedObject(SmartModel):
@@ -254,14 +287,14 @@ class LegalReasonRelatedObject(SmartModel):
         'object_content_type', 'object_id'
     )
 
-    def __str__(self):
-        return '{legal_reason} {object}'.format(legal_reason=self.legal_reason, object=self.object)
-
     class Meta:
         verbose_name = _('legal reason related object')
         verbose_name_plural = _('legal reasons related objects')
         ordering = ('-created_at',)
         unique_together = ('legal_reason', 'object_content_type', 'object_id')
+
+    def __str__(self):
+        return '{legal_reason} {object}'.format(legal_reason=self.legal_reason, object=self.object)
 
 
 class AnonymizedDataQuerySet(models.QuerySet):
@@ -310,11 +343,11 @@ class AnonymizedData(SmartModel):
         on_delete=models.SET_NULL
     )
 
-    def __str__(self):
-        return '{field} {object}'.format(field=self.field, object=self.object)
-
     class Meta:
         verbose_name = _('anonymized data')
         verbose_name_plural = _('anonymized data')
         ordering = ('-created_at',)
         unique_together = ('content_type', 'object_id', 'field')
+
+    def __str__(self):
+        return '{field} {object}'.format(field=self.field, object=self.object)
