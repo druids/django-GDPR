@@ -168,7 +168,7 @@ class LegalReasonQuerySet(models.QuerySet):
         return self.filter_source_instance(source_object).filter_active_and_non_expired()
 
     def filter_source_instance_active_non_expired_purpose(self, source_object, purpose_slug: str):
-        return self.filter_source_instance(source_object).filter_active_and_non_expired().filter(
+        return self.filter_source_instance_active_non_expired(source_object).filter(
             purpose_slug=purpose_slug
         )
 
