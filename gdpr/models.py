@@ -79,10 +79,16 @@ class LegalReasonManager(models.Manager):
         Args:
             purpose_slug: Purpose slug to deactivate consent for
             source_object: Source object to deactivate consent for
+
+        Returns:
+            List of LegalReason objects
         """
+        reasons = []
         for reason in LegalReason.objects.filter_source_instance_active_non_expired_purpose(source_object,
                                                                                             purpose_slug):
             reason.deactivate()
+            reasons.append(reason)
+        return reasons
 
     def exists_valid_consent(self, purpose_slug: str, source_object):
         """
