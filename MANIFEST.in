@@ -1,0 +1,4 @@
+include LICENSE
+include README.md
+include MANIFEST.in
+recursive-include gdpr *.py *.txt *.html *.po *.mo *.xml *.xslt *.xsl *.js *.sass *.css *.png *.jpg *.jpeg *.gif
