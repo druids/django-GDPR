@@ -246,10 +246,8 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     @staticmethod
     def _perform_version_update(version, update_data):
         from reversion import revisions
-        if hasattr(version, "object_version"):
-            local_obj = version.object_version.object
-        else:
-            local_obj = version._object_version.object
+
+        local_obj = version._object_version.object
         for field, value in update_data.items():
             setattr(local_obj, field, value)
         if hasattr(revisions, '_get_options'):

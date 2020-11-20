@@ -272,7 +272,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
             reversion.set_user(user)
 
-        versions: List[Version] = get_reversion_versions(form)
+        versions: List[Version] = get_reversion_versions(form).order_by('id')
 
         self.assertEqual(versions[0].field_dict['email'], CUSTOMER__EMAIL)
         self.assertEqual(versions[1].field_dict['email'], CUSTOMER__EMAIL2)
@@ -280,7 +280,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         anon.anonymize_obj(form, base_encryption_key=self.base_encryption_key)
 
-        anon_versions: List[Version] = get_reversion_versions(form)
+        anon_versions: List[Version] = get_reversion_versions(form).order_by('id')
         anon_form = ContactForm.objects.get(pk=form.pk)
 
         self.assertNotEqual(anon_versions[0].field_dict['email'], CUSTOMER__EMAIL)
@@ -290,7 +290,7 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         anon.deanonymize_obj(anon_form, base_encryption_key=self.base_encryption_key)
 
-        deanon_versions: List[Version] = get_reversion_versions(form)
+        deanon_versions: List[Version] = get_reversion_versions(form).order_by('id')
         deanon_form = ContactForm.objects.get(pk=form.pk)
 
         self.assertEqual(deanon_versions[0].field_dict['email'], CUSTOMER__EMAIL)
@@ -333,11 +333,11 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
             reversion.set_user(user)
 
-        versions_a: List[Version] = get_reversion_versions(e.topparenta_ptr)
-        versions_b: List[Version] = get_reversion_versions(e.parentb_ptr)
-        versions_c: List[Version] = get_reversion_versions(e.parentc_ptr)
-        versions_d: List[Version] = get_reversion_versions(e.extraparentd_ptr)
-        versions_e: List[Version] = get_reversion_versions(e)
+        versions_a: List[Version] = get_reversion_versions(e.topparenta_ptr).order_by('id')
+        versions_b: List[Version] = get_reversion_versions(e.parentb_ptr).order_by('id')
+        versions_c: List[Version] = get_reversion_versions(e.parentc_ptr).order_by('id')
+        versions_d: List[Version] = get_reversion_versions(e.extraparentd_ptr).order_by('id')
+        versions_e: List[Version] = get_reversion_versions(e).order_by('id')
 
         self.assertEqual(get_reversion_local_field_dict(versions_a[0])['name'], 'Lorem')
         self.assertEqual(get_reversion_local_field_dict(versions_a[1])['name'], 'LOREM')
@@ -357,11 +357,11 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         anon.anonymize_obj(e, base_encryption_key=self.base_encryption_key)
 
-        anon_versions_a: List[Version] = get_reversion_versions(e.topparenta_ptr)
-        anon_versions_b: List[Version] = get_reversion_versions(e.parentb_ptr)
-        anon_versions_c: List[Version] = get_reversion_versions(e.parentc_ptr)
-        anon_versions_d: List[Version] = get_reversion_versions(e.extraparentd_ptr)
-        anon_versions_e: List[Version] = get_reversion_versions(e)
+        anon_versions_a: List[Version] = get_reversion_versions(e.topparenta_ptr).order_by('id')
+        anon_versions_b: List[Version] = get_reversion_versions(e.parentb_ptr).order_by('id')
+        anon_versions_c: List[Version] = get_reversion_versions(e.parentc_ptr).order_by('id')
+        anon_versions_d: List[Version] = get_reversion_versions(e.extraparentd_ptr).order_by('id')
+        anon_versions_e: List[Version] = get_reversion_versions(e).order_by('id')
         anon_e = ChildE.objects.get(pk=e.pk)
 
         self.assertNotEqual(get_reversion_local_field_dict(anon_versions_a[0])['name'], 'Lorem')
@@ -382,11 +382,11 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
 
         anon.deanonymize_obj(anon_e, base_encryption_key=self.base_encryption_key)
 
-        deanon_versions_a: List[Version] = get_reversion_versions(e.topparenta_ptr)
-        deanon_versions_b: List[Version] = get_reversion_versions(e.parentb_ptr)
-        deanon_versions_c: List[Version] = get_reversion_versions(e.parentc_ptr)
-        deanon_versions_d: List[Version] = get_reversion_versions(e.extraparentd_ptr)
-        deanon_versions_e: List[Version] = get_reversion_versions(e)
+        deanon_versions_a: List[Version] = get_reversion_versions(e.topparenta_ptr).order_by('id')
+        deanon_versions_b: List[Version] = get_reversion_versions(e.parentb_ptr).order_by('id')
+        deanon_versions_c: List[Version] = get_reversion_versions(e.parentc_ptr).order_by('id')
+        deanon_versions_d: List[Version] = get_reversion_versions(e.extraparentd_ptr).order_by('id')
+        deanon_versions_e: List[Version] = get_reversion_versions(e).order_by('id')
 
         self.assertEqual(get_reversion_local_field_dict(deanon_versions_a[0])['name'], 'Lorem')
         self.assertEqual(get_reversion_local_field_dict(deanon_versions_a[1])['name'], 'LOREM')

@@ -4,20 +4,18 @@ dist: xenial
 python:
   - "3.6"
   - "3.7"
+  - "3.8"
+  - "3.6"
 env:
-  - DJANGO_VERSION=2.1.5 REVERSION=
-  - DJANGO_VERSION=2.1.5 REVERSION='django-reversion==3.0.3'
-  - DJANGO_VERSION=2.0.10 REVERSION=
-  - DJANGO_VERSION=2.0.10 REVERSION='django-reversion==3.0.3'
-  - DJANGO_VERSION=1.11.18 REVERSION=
-  - DJANGO_VERSION=1.11.18 REVERSION='django-reversion==3.0.3'
-  - DJANGO_VERSION=1.11.18 REVERSION=https://github.com/druids/django-reversion/tarball/2.0.14#egg=django-reversion-2.0.14
+  - DJANGO_VERSION=2.2
+  - DJANGO_VERSION=3.0
+  - DJANGO_VERSION=3.1
 # command to install dependencies
 install:
   - sed -i '/django==/d' ./test_requirements.txt
   - sed -i '/django-reversion/d' ./test_requirements.txt
   - pip install -q -r test_requirements.txt
-  - pip install -q Django==$DJANGO_VERSION $REVERSION
+  - pip install -q Django==$DJANGO_VERSION
   - python setup.py -q install
   - pip freeze
 # command to run tests

@@ -1,8 +1,7 @@
-flake8==3.6.0
-mypy==0.650
+flake8==3.8.4
+mypy==0.790
 python-dateutil==2.7.5
 django-extensions
 freezegun==0.3.11
 Faker==1.0.1
-mock==2.0.0
-django-reversion==3.0.3
+django-reversion==3.0.8
