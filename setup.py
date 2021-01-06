@@ -39,12 +39,12 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
     install_requires=[
-        'django>=1.8',
-        'django-chamber>=0.4.0',
+        'django>=2.2',
+        'django-chamber>=0.5.26',
         'tqdm>=4.28.1',
         'pyaes>=1.6.1',
         'unidecode',
-        'django-choice-enumfields>=1.0.3',
+        'django-choice-enumfields>=1.0.5',
     ],
     zip_safe=False,
 )

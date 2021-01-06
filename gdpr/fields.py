@@ -34,7 +34,7 @@ class Fields:
     def parse_related_fields(self, fields: FieldMatrix) -> RelatedFieldDict:
         """Get Dictionary of related fields from fields matrix."""
         out_dict = {}
-        for name, related_fields in [field_tuple for field_tuple in fields if type(field_tuple) in [list, tuple]]:
+        for name, related_fields in [field_tuple for field_tuple in fields if isinstance(field_tuple, (list, tuple))]:
             out_dict[name] = Fields(related_fields, self.anonymizer.get_related_model(name))
 
         return out_dict

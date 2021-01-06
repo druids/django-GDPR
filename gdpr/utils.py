@@ -53,13 +53,7 @@ def get_reversion_versions(obj: Any) -> QuerySet:
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
 
-    if hasattr(Version.objects, 'get_for_object'):
-        return Version.objects.get_for_object(obj).order_by('id')
-    content_type = ContentType.objects.get_for_model(obj.__class__)
-    if isinstance(obj.pk, int):
-        return Version.objects.filter(content_type=content_type, object_id_int=obj.pk).order_by('id')
-    else:
-        return Version.objects.filter(content_type=content_type, object_id=obj.pk).order_by('id')
+    return Version.objects.get_for_object(obj)
 
 
 def get_reversion_version_model(version) -> Type[Model]:
