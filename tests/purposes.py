@@ -11,6 +11,7 @@ ACCOUNT_AND_PAYMENT_SLUG = "ACP"
 ADDRESS_SLUG = "ADD"
 CONTACT_FORM_SLUG = "CTF"
 EVERYTHING_SLUG = "EVR"
+MARKETING_SLUG = "MKT"
 
 
 class FirstNLastNamePurpose(AbstractPurpose):
@@ -110,3 +111,11 @@ class ContactFormPurpose(AbstractPurpose):
     slug = CONTACT_FORM_SLUG
     expiration_timedelta = relativedelta(months=1)
     fields = "__ALL__"
+
+
+class MarketingPurpose(AbstractPurpose):
+    """retain due customers wanting more adds"""
+    name = "retain due customers wanting more adds"
+    slug = MARKETING_SLUG
+    expiration_timedelta = relativedelta(years=1)
+    fields = ()
