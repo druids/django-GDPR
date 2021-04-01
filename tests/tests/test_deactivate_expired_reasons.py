@@ -45,7 +45,17 @@ class TestDeactivateExpiredReasons(AnonymizedDataMixin, TestCase):
             test_call_command('deactivate_expired_reasons')
         assert_true(LegalReason.objects.exists_deactivated_consent(MARKETING_SLUG, self.customer))
 
-    def test_command_should_not_anonymize_customer_if_expiring_reason_is_not_related_to_customer_date(self):
+    def test_command_should_not_touch_already_expired_legal_reasons(self):
+        legal_reason = LegalReason.objects.create_consent(MARKETING_SLUG, self.customer)
+        legal_reason.save()
+        legal_reason.expire()
+        original_expiration_time = legal_reason.changed_at
+
+        with freeze_time(original_expiration_time + relativedelta(seconds=1)):
+            test_call_command('deactivate_expired_reasons')
+        assert_equal(original_expiration_time, legal_reason.refresh_from_db().changed_at)
+
+    def test_command_should_not_anonymize_customer_if_expiring_reason_is_not_related_to_customer_data(self):
         marketing_legal_reason = LegalReason.objects.create_consent(MARKETING_SLUG, self.customer)
         marketing_legal_reason.save()
         LegalReason.objects.create_consent(FIRST_AND_LAST_NAME_SLUG, self.customer).save()
