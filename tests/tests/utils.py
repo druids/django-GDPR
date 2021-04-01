@@ -5,6 +5,7 @@ from django.db.models import Model
 from django.test import TestCase
 
 from gdpr.models import AnonymizedData
+from germanium.tools import assert_false, assert_true
 
 
 class NotImplementedMixin(TestCase):
@@ -23,10 +24,10 @@ class NotImplementedMixin(TestCase):
 class AnonymizedDataMixin(TestCase):
     def assertAnonymizedDataExists(self, obj: Model, field: str):
         content_type = ContentType.objects.get_for_model(obj.__class__)
-        self.assertTrue(
+        assert_true(
             AnonymizedData.objects.filter(content_type=content_type, object_id=str(obj.pk), field=field).exists())
 
     def assertAnonymizedDataNotExists(self, obj: Model, field: str):
         content_type = ContentType.objects.get_for_model(obj.__class__)
-        self.assertFalse(
+        assert_false(
             AnonymizedData.objects.filter(content_type=content_type, object_id=str(obj.pk), field=field).exists())

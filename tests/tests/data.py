@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
+
 CUSTOMER__FIRST_NAME = "John"
 CUSTOMER__LAST_NAME = "Smith"
 CUSTOMER__EMAIL = "smth@u.plus"
