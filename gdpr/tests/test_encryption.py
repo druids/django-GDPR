@@ -1,11 +1,13 @@
 from decimal import Decimal
 
 from django.test import TestCase
-from faker import Faker
 
+from faker import Faker
 from gdpr.encryption import (
     decrypt_email_address, decrypt_text, encrypt_email_address, encrypt_text, translate_iban, translate_number
 )
+from germanium.tools import assert_equal, assert_not_equal
+
 
 IBANS = [
     'AL47 2121 1009 0000 0002 3569 8741',
@@ -102,16 +104,10 @@ class TestEncryption(TestCase):
         cleartext = self.faker.name()
 
         ciphertext = encrypt_text(self.encryption_key, cleartext)
-        self.assertNotEqual(
-            cleartext, ciphertext,
-            "The encrypted name is equal to the original name."
-        )
+        assert_not_equal(cleartext, ciphertext, "The encrypted name is equal to the original name.")
 
         decrypted = decrypt_text(self.encryption_key, ciphertext)
-        self.assertEqual(
-            cleartext, decrypted,
-            "The decrypted name is not equal to the original name."
-        )
+        assert_equal(cleartext, decrypted, "The decrypted name is not equal to the original name.")
 
     def test_encrypt_email_address(self):
         """
@@ -120,16 +116,10 @@ class TestEncryption(TestCase):
         cleartext = self.faker.email()
 
         ciphertext = encrypt_email_address(self.encryption_key, cleartext)
-        self.assertNotEqual(
-            cleartext, ciphertext,
-            "The encrypted email address is equal to the original email address."
-        )
+        assert_not_equal(cleartext, ciphertext, "The encrypted email address is equal to the original email address.")
 
         decrypted = decrypt_email_address(self.encryption_key, ciphertext)
-        self.assertEqual(
-            cleartext, decrypted,
-            "The decrypted email address is not equal to the original email address."
-        )
+        assert_equal(cleartext, decrypted, "The decrypted email address is not equal to the original email address.")
 
     def test_translate_iban(self):
         """
@@ -137,14 +127,9 @@ class TestEncryption(TestCase):
         """
         for IBAN in IBANS:
             encrypted = translate_iban(self.encryption_key, IBAN)
-            self.assertNotEqual(
-                encrypted, IBAN,
-                "The encrypted IBAN is equal to the original IBAN."
-            )
-            self.assertEqual(
-                translate_iban(self.encryption_key, encrypted, False), IBAN,
-                "The decrypted IBAN is not equal to the original IBAN."
-            )
+            assert_not_equal(encrypted, IBAN, "The encrypted IBAN is equal to the original IBAN.")
+            assert_equal(translate_iban(self.encryption_key, encrypted, False), IBAN,
+                         "The decrypted IBAN is not equal to the original IBAN.")
 
     def test_translate_number_whole_positive(self):
         """
@@ -153,13 +138,13 @@ class TestEncryption(TestCase):
         number = 42
         encrypted = translate_number(self.numeric_encryption_key, number)
 
-        self.assertNotEqual(number, encrypted)
-        self.assertEqual(type(number), type(encrypted))
+        assert_not_equal(number, encrypted)
+        assert_equal(type(number), type(encrypted))
 
         decrypted = translate_number(self.numeric_encryption_key, encrypted, encrypt=False)
 
-        self.assertEqual(number, decrypted)
-        self.assertEqual(type(number), type(decrypted))
+        assert_equal(number, decrypted)
+        assert_equal(type(number), type(decrypted))
 
     def test_translate_number_whole_negative(self):
         """
@@ -168,13 +153,13 @@ class TestEncryption(TestCase):
         number = -42
         encrypted = translate_number(self.numeric_encryption_key, number)
 
-        self.assertNotEqual(number, encrypted)
-        self.assertEqual(type(number), type(encrypted))
+        assert_not_equal(number, encrypted)
+        assert_equal(type(number), type(encrypted))
 
         decrypted = translate_number(self.numeric_encryption_key, encrypted, encrypt=False)
 
-        self.assertEqual(number, decrypted)
-        self.assertEqual(type(number), type(decrypted))
+        assert_equal(number, decrypted)
+        assert_equal(type(number), type(decrypted))
 
     def test_translate_number_decimal_positive(self):
         """
@@ -183,13 +168,13 @@ class TestEncryption(TestCase):
         number = Decimal("3.14")
         encrypted = translate_number(self.numeric_encryption_key, number)
 
-        self.assertNotEqual(number, encrypted)
-        self.assertEqual(type(number), type(encrypted))
+        assert_not_equal(number, encrypted)
+        assert_equal(type(number), type(encrypted))
 
         decrypted = translate_number(self.numeric_encryption_key, encrypted, encrypt=False)
 
-        self.assertEqual(number, decrypted)
-        self.assertEqual(type(number), type(decrypted))
+        assert_equal(number, decrypted)
+        assert_equal(type(number), type(decrypted))
 
     def test_translate_number_decimal_negative(self):
         """
@@ -198,10 +183,10 @@ class TestEncryption(TestCase):
         number = Decimal("-3.14")
         encrypted = translate_number(self.numeric_encryption_key, number)
 
-        self.assertNotEqual(number, encrypted)
-        self.assertEqual(type(number), type(encrypted))
+        assert_not_equal(number, encrypted)
+        assert_equal(type(number), type(encrypted))
 
         decrypted = translate_number(self.numeric_encryption_key, encrypted, encrypt=False)
 
-        self.assertEqual(number, decrypted)
-        self.assertEqual(type(number), type(decrypted))
+        assert_equal(number, decrypted)
+        assert_equal(type(number), type(decrypted))
