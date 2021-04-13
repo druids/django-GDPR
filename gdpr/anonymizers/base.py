@@ -5,9 +5,16 @@ from django.db.models import Model
 
 from gdpr.encryption import numerize_key
 from gdpr.utils import get_number_guess_len
+from gdpr.loading import anonymizer_register
 
 
-class RelationAnonymizer:
+class BaseAnonymizer:
+    """
+    Base class for Anonymizers defining anonymizer type with properties:
+    """
+
+
+class RelationAnonymizer(BaseAnonymizer):
     """
     Base class for Anonymizers defining special relations.
     """
@@ -17,11 +24,12 @@ class RelationAnonymizer:
     def get_related_objects(self, obj: Model) -> Iterable:
         raise NotImplementedError
 
-    def get_related_model(self) -> Type[Model]:
-        return self.model
+    @property
+    def model_anonymizer(self):
+        return anonymizer_register[self.model]()
 
 
-class FieldAnonymizer:
+class FieldAnonymizer(BaseAnonymizer):
     """
     Field anonymizer's purpose is to anonymize model field according to defined rule.
     """

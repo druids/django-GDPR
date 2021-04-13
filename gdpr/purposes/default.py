@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING, Any, Dict, KeysView, List, Optional, Tuple, Ty
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model, Q
+from django.apps import apps
+from django.db.models.utils import make_model_tuple
 
 from gdpr.enums import LegalReasonState
 from gdpr.fields import Fields
@@ -27,6 +29,13 @@ class PurposeMetaclass(type):
                 raise ImproperlyConfigured('More anonymization purposes with slug {}'.format(new_class.slug))
 
             purpose_register.register(new_class.slug, new_class)
+
+        def set_source_model_class(model):
+            new_class.source_model_class = model
+
+        if isinstance(new_class.source_model_class, str):
+            apps.lazy_model_operation(set_source_model_class, make_model_tuple(new_class.source_model_class))
+
         return new_class
 
     def __str__(self):
@@ -45,6 +54,10 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
     fields: Union[str, Tuple[Any, ...], None] = None
     expiration_timedelta: Any
     anonymize_legal_reason_related_objects_only: bool = False  # @TODO: Add support
+    source_model_class: Optional[Union[str, Type[Model]]] = None
+
+    def can_anonymize_obj(self, obj: Model, fields: FieldMatrix):
+        return len(fields) != 0
 
     def get_parsed_fields(self, model: Type[Model]) -> Fields:
         return Fields(self.fields or (), model)
@@ -61,7 +74,7 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
     def anonymize_obj(self, obj: Model, legal_reason: Optional["LegalReason"] = None,
                       fields: Optional[FieldMatrix] = None):
         fields = fields or self.fields or ()
-        if len(fields) == 0:
+        if not self.can_anonymize_obj(obj, fields):
             # If there are no fields to anonymize do nothing.
             return
         from gdpr.models import LegalReason  # noqa

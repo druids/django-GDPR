@@ -3,10 +3,11 @@ from django.test import TestCase
 
 from faker import Faker
 from gdpr.models import LegalReason
-from germanium.tools import assert_equal, assert_not_equal, assert_true
+from germanium.tools import assert_equal, assert_not_equal, assert_true, assert_raises
 from tests.models import Account, Customer, Email, Payment
 from tests.purposes import (
-    ACCOUNT_AND_PAYMENT_SLUG, ACCOUNT_SLUG, EMAIL_SLUG, EVERYTHING_SLUG, FIRST_AND_LAST_NAME_SLUG, EmailsPurpose
+    ACCOUNT_AND_PAYMENT_SLUG, ACCOUNT_SLUG, EMAIL_SLUG, EVERYTHING_SLUG, FACEBOOK_SLUG, FIRST_AND_LAST_NAME_SLUG,
+    EmailsPurpose, FacebookPurpose, MarketingPurpose
 )
 from tests.tests.data import (
     ACCOUNT__NUMBER, ACCOUNT__NUMBER2, ACCOUNT__OWNER, ACCOUNT__OWNER2, CUSTOMER__BIRTH_DATE, CUSTOMER__EMAIL,
@@ -17,6 +18,7 @@ from tests.tests.utils import AnonymizedDataMixin, NotImplementedMixin
 
 
 class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
+
     def setUp(self):
         self.fake = Faker()
 
@@ -319,3 +321,32 @@ class TestLegalReason(AnonymizedDataMixin, NotImplementedMixin, TestCase):
         self.assertAnonymizedDataExists(anon_payment, "value")
         assert_not_equal(anon_payment.date, payment.date)
         self.assertAnonymizedDataExists(anon_payment, "date")
+
+    def test_purpose_source_model_class_should_be_set_with_string(self):
+        assert_equal(FacebookPurpose.source_model_class, Customer)
+
+    def test_purpose_source_model_class_should_be_set_directly(self):
+        assert_equal(MarketingPurpose.source_model_class, Customer)
+
+    def test_purpose_should_be_set_only_to_the_right_source_model(self):
+        LegalReason.objects.create_consent(FACEBOOK_SLUG, self.customer)
+        with assert_raises(KeyError):
+            LegalReason.objects.create_consent(FACEBOOK_SLUG, Email(customer=self.customer, email=CUSTOMER__EMAIL))
+
+    def test_facebook_purpose_should_anonymize_customer_with_facebook_id(self):
+        customer = Customer.objects.get(pk=self.customer.pk)
+        legal_reason = LegalReason.objects.create_consent(FACEBOOK_SLUG, customer)
+        legal_reason.save()
+        legal_reason.expire()
+        customer.refresh_from_db()
+        assert_not_equal(customer.first_name, CUSTOMER__FIRST_NAME)
+
+    def test_facebook_purpose_should_anonymize_customer_without_facebook_id(self):
+        customer = Customer.objects.get(pk=self.customer.pk)
+        legal_reason = LegalReason.objects.create_consent(FACEBOOK_SLUG, customer)
+        customer.facebook_id = None
+        customer.save()
+        legal_reason.save()
+        legal_reason.expire()
+        customer.refresh_from_db()
+        assert_equal(customer.first_name, CUSTOMER__FIRST_NAME)

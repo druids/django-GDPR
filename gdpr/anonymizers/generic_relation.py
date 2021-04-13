@@ -35,11 +35,12 @@ class ReverseGenericRelationAnonymizer(RelationAnonymizer):
         super().__init__()
 
     def get_related_objects(self, obj):
-        return self.get_related_model().objects.filter(
+        return self.model.objects.filter(
             **{self.content_type_field: ContentType.objects.get_for_model(obj), self.id_field: obj.pk}
         )
 
-    def get_related_model(self):
+    @property
+    def model(self):
         return apps.get_model(self.app_name, self.model_name)
 
 
@@ -68,7 +69,7 @@ class GenericRelationAnonymizer(RelationAnonymizer):
         super().__init__()
 
     def get_related_objects(self, obj):
-        model: Model = self.get_related_model()
+        model: Model = self.model
         content_obj = getattr(obj, self.content_object_field, None)
         if content_obj is None:
             return model.objects.none()
@@ -76,5 +77,6 @@ class GenericRelationAnonymizer(RelationAnonymizer):
             return [content_obj]
         return model.objects.none()
 
-    def get_related_model(self):
+    @property
+    def model(self):
         return apps.get_model(self.app_name, self.model_name)
