@@ -10,8 +10,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.db import transaction
 from django.db.models import Model, QuerySet
+from django.db.models.fields import Field
 
-from gdpr.anonymizers.base import FieldAnonymizer, RelationAnonymizer
+from gdpr.anonymizers.base import BaseAnonymizer, FieldAnonymizer, RelationAnonymizer
 from gdpr.fields import Fields
 from gdpr.models import AnonymizedData, LegalReason
 from gdpr.utils import get_field_or_none, get_reversion_version_model
@@ -41,11 +42,16 @@ class ModelAnonymizerMeta(type):
             return new_obj
 
         fields = getattr(new_obj, 'fields', {})
+        anonymizers = getattr(new_obj, 'anonymizers', {})
 
         for name, obj in attrs.items():
-            if isinstance(obj, FieldAnonymizer):
-                fields[name] = obj
+            if isinstance(obj, BaseAnonymizer):
+                anonymizers[name] = obj
+                if isinstance(obj, FieldAnonymizer):
+                    fields[name] = obj
+
         new_obj.fields = fields
+        new_obj.anonymizers = anonymizers
 
         if not getattr(new_obj.Meta, 'abstract', False):
             anonymizer_register.register(new_obj.Meta.model, new_obj)
@@ -53,9 +59,11 @@ class ModelAnonymizerMeta(type):
         return new_obj
 
 
-class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
+class ModelAnonymizerBase(BaseAnonymizer, metaclass=ModelAnonymizerMeta):
+
     can_anonymize_qs: bool
     fields: Dict[str, FieldAnonymizer]
+    anonymizers: Dict[str, BaseAnonymizer]
     _base_encryption_key = None
 
     class IrreversibleAnonymizerException(Exception):
@@ -131,15 +139,12 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
             field=name, is_active=True, content_type=self.content_type, object_id=str(obj.pk)
         ).exists()
 
-    @staticmethod
-    def is_generic_relation(field) -> bool:
-        return isinstance(field, RelationAnonymizer)
-
     def get_related_model(self, field_name: str) -> Type[Model]:
         field = get_field_or_none(self.model, field_name)
         if field is None:
-            if self.is_generic_relation(getattr(self, field_name, None)):
-                return getattr(self, field_name).get_related_model()
+            anonymizer = self.anonymizers.get(field_name)
+            if anonymizer and isinstance(anonymizer, (ModelAnonymizerBase, RelationAnonymizer)):
+                return anonymizer.model
             raise RuntimeError(f'Field \'{field_name}\' is not defined on {str(self.model)}')
         elif hasattr(field, "related_model"):
             return field.related_model
@@ -292,36 +297,137 @@ class ModelAnonymizerBase(metaclass=ModelAnonymizerMeta):
     def deanonymize_qs(self, qs: QuerySet) -> None:
         raise NotImplementedError()
 
+    def get_related_model_anonymizer_none(self, name):
+        anonymizer = self.anonymizers.get(name)
+
+        if anonymizer and isinstance(anonymizer, ModelAnonymizerBase):
+            return anonymizer
+        elif anonymizer and isinstance(anonymizer, RelationAnonymizer):
+            return anonymizer.model_anonymizer
+        else:
+            return None
+
+    def update_related_anonymizer_fields(self,
+                                         field_name: str,
+                                         anonymizer: RelationAnonymizer,
+                                         obj: Model,
+                                         related_fields: Fields,
+                                         legal_reason: Optional[LegalReason] = None,
+                                         purpose: Optional["AbstractPurpose"] = None,
+                                         anonymization: bool = True):
+        """
+        Anonymize related object defined in related anonymization class.
+        Args:
+            field_name: name of the model field/property
+            anonymizer: relation anonymizer defined it the model anonymization class
+            obj: django model instance
+            related_fields: fields which will be anonymized
+            legal_reason: legal reason which raises anonymization
+            purpose: deactivated purpose
+            anonymization: anonymize or not
+        """
+        objs = anonymizer.get_related_objects(obj)
+        for related_obj in objs:
+            related_fields.anonymizer.update_obj(
+                related_obj, legal_reason, purpose, related_fields,
+                base_encryption_key=self._get_encryption_key(obj, field_name),
+                anonymization=anonymization
+            )
+
+    def update_related_model_property_fields(self,
+                                             field_name: str,
+                                             obj: Model,
+                                             related_fields: Fields,
+                                             legal_reason: Optional[LegalReason] = None,
+                                             purpose: Optional["AbstractPurpose"] = None,
+                                             anonymization: bool = True):
+        """
+        Anonymize related object or objects get from model property.
+        Args:
+            field_name: name of the model field/property
+            obj: django model instance
+            related_fields: fields which will be anonymized
+            legal_reason: legal reason which raises anonymization
+            purpose: deactivated purpose
+            anonymization: anonymize or not
+        """
+        related_attribute = getattr(obj, field_name, None)
+
+        if hasattr(obj.__class__, field_name) and related_attribute is None:
+            return
+        elif isinstance(related_attribute, Model):
+            related_fields.anonymizer.update_obj(
+                related_attribute, legal_reason, purpose, related_fields,
+                base_encryption_key=self._get_encryption_key(obj, field_name),
+                anonymization=anonymization
+            )
+        elif isinstance(related_attribute, QuerySet):
+            for related_obj in related_attribute:
+                related_fields.anonymizer.update_obj(
+                    related_obj, legal_reason, purpose, related_fields,
+                    base_encryption_key=self._get_encryption_key(obj, field_name),
+                    anonymization=anonymization
+                )
+        else:
+            warnings.warn(f'Model anonymization discovered unreachable field {field_name} on model'
+                          f'{obj.__class__.__name__} on obj {obj} with pk {obj.pk}')
+
+    def update_related_model_fields(self,
+                                    field_name: str,
+                                    related_metafield: Field,
+                                    obj: Model,
+                                    related_fields: Fields,
+                                    legal_reason: Optional[LegalReason] = None,
+                                    purpose: Optional["AbstractPurpose"] = None,
+                                    anonymization: bool = True):
+        """
+        Anonymize related object or objects get from model field.
+        Args:
+            field_name: name of the model field
+            related_metafield: meta infromations get from django model field
+            obj: django model instance
+            related_fields: fields which will be anonymized
+            legal_reason: legal reason which raises anonymization
+            purpose: deactivated purpose
+            anonymization: anonymize or not
+        """
+        related_attribute = getattr(obj, field_name, None)
+        if related_metafield.one_to_many or related_metafield.many_to_many:
+            for related_obj in related_attribute.all():
+                related_fields.anonymizer.update_obj(
+                    related_obj, legal_reason, purpose, related_fields,
+                    base_encryption_key=self._get_encryption_key(obj, field_name),
+                    anonymization=anonymization
+                )
+        elif related_metafield.many_to_one or related_metafield.one_to_one:
+            if related_attribute is not None:
+                related_fields.anonymizer.update_obj(
+                    related_attribute, legal_reason, purpose, related_fields,
+                    base_encryption_key=self._get_encryption_key(obj, field_name),
+                    anonymization=anonymization
+                )
+        else:
+            warnings.warn(f'Model anonymization discovered unreachable field {field_name} on model'
+                          f'{obj.__class__.__name__} on obj {obj} with pk {obj.pk}')
+
     def update_related_fields(self, parsed_fields: Fields, obj: Model, legal_reason: Optional[LegalReason] = None,
                               purpose: Optional["AbstractPurpose"] = None, anonymization: bool = True):
         for name, related_fields in parsed_fields.related_fields.items():
-            related_attribute = getattr(obj, name, None)
             related_metafield = get_field_or_none(self.model, name)
-            if related_attribute is None and related_metafield is None:
-                if self.is_generic_relation(getattr(self, name, None)):
-                    objs = getattr(self, name).get_related_objects(obj)
-                    for related_obj in objs:
-                        related_fields.anonymizer.update_obj(
-                            related_obj, legal_reason, purpose, related_fields,
-                            base_encryption_key=self._get_encryption_key(obj, name),
-                            anonymization=anonymization
-                        )
-            elif related_metafield.one_to_many or related_metafield.many_to_many:
-                for related_obj in related_attribute.all():
-                    related_fields.anonymizer.update_obj(
-                        related_obj, legal_reason, purpose, related_fields,
-                        base_encryption_key=self._get_encryption_key(obj, name),
-                        anonymization=anonymization
-                    )
-            elif (related_metafield.many_to_one or related_metafield.one_to_one) and related_attribute is not None:
-                related_fields.anonymizer.update_obj(
-                    related_attribute, legal_reason, purpose, related_fields,
-                    base_encryption_key=self._get_encryption_key(obj, name),
-                    anonymization=anonymization
+            anonymizer = self.anonymizers.get(name)
+
+            if anonymizer and isinstance(anonymizer, RelationAnonymizer):
+                self.update_related_anonymizer_fields(
+                    name, anonymizer, obj, related_fields, legal_reason, purpose, anonymization
                 )
-            elif related_attribute is not None:
-                warnings.warn(f'Model anonymization discovered unreachable field {name} on model'
-                              f'{obj.__class__.__name__} on obj {obj} with pk {obj.pk}')
+            elif related_metafield:
+                self.update_related_model_fields(
+                    name, related_metafield, obj, related_fields, legal_reason, purpose, anonymization
+                )
+            else:
+                self.update_related_model_property_fields(
+                    name, obj, related_fields, legal_reason, purpose, anonymization
+                )
 
     def update_obj(self, obj: Model, legal_reason: Optional[LegalReason] = None,
                    purpose: Optional["AbstractPurpose"] = None,

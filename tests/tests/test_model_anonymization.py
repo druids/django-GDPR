@@ -8,10 +8,14 @@ from django.test import TestCase
 
 from gdpr.anonymizers import ModelAnonymizer
 from gdpr.loading import anonymizer_register
+from gdpr.models import LegalReason
 from gdpr.utils import get_reversion_local_field_dict, is_reversion_installed
 from germanium.tools import assert_dict_equal, assert_equal, assert_not_equal, assert_raises
 from tests.anonymizers import ChildEAnonymizer, ContactFormAnonymizer
-from tests.models import Account, Address, Avatar, ChildE, ContactForm, Customer, Email, Note, Payment
+from tests.models import (
+    Account, Address, Avatar, ChildE, ContactForm, Customer, CustomerRegistration, Email, Note, Payment
+)
+from tests.purposes import EMAIL_SLUG
 
 from .data import (
     ACCOUNT__IBAN, ACCOUNT__NUMBER, ACCOUNT__OWNER, ACCOUNT__SWIFT, ADDRESS__CITY, ADDRESS__HOUSE_NUMBER,
@@ -51,6 +55,16 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         self.assertAnonymizedDataExists(anon_customer, 'first_name')
         assert_not_equal(str(anon_customer.last_login_ip), CUSTOMER__IP)
         self.assertAnonymizedDataExists(anon_customer, 'first_name')
+
+    def test_anonymize_customer_registrations(self):
+        other_registration: CustomerRegistration = CustomerRegistration.objects.create(email_address=CUSTOMER__EMAIL)
+        last_registration: CustomerRegistration = CustomerRegistration.objects.create(email_address=CUSTOMER__EMAIL)
+        legal_reason = LegalReason.objects.create_consent(EMAIL_SLUG, self.customer)
+        legal_reason.expire()
+        other_registration.refresh_from_db()
+        last_registration.refresh_from_db()
+        assert_not_equal(other_registration.email_address, CUSTOMER__EMAIL)
+        assert_not_equal(last_registration.email_address, CUSTOMER__EMAIL)
 
     def test_email(self):
         self.email: Email = Email(customer=self.customer, email=CUSTOMER__EMAIL)

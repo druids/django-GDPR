@@ -43,6 +43,12 @@ class LegalReasonManager(models.Manager):
             purpose = purpose_register[purpose_slug]
         except KeyError:
             raise KeyError('Purpose with slug {} does not exits'.format(purpose_slug))
+
+        if purpose.source_model_class is not None and not source_object.__class__ == purpose.source_model_class:
+            raise KeyError(
+                'Purpose with slug {} cannot be created for model {}'.format(purpose_slug, source_object.__class__)
+            )
+
         issued_at = issued_at or timezone.now()
 
         legal_reason, created = LegalReason.objects.get_or_create(

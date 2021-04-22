@@ -2,6 +2,9 @@ from dateutil.relativedelta import relativedelta
 
 from gdpr.purposes.default import AbstractPurpose
 
+from .models import Customer
+
+
 # SLUG can be any length up to 100 characters
 FIRST_AND_LAST_NAME_SLUG = "FNL"
 EMAIL_SLUG = "EML"
@@ -12,6 +15,7 @@ ADDRESS_SLUG = "ADD"
 CONTACT_FORM_SLUG = "CTF"
 EVERYTHING_SLUG = "EVR"
 MARKETING_SLUG = "MKT"
+FACEBOOK_SLUG = "FACEBOOK"
 
 
 class FirstNLastNamePurpose(AbstractPurpose):
@@ -30,6 +34,12 @@ class EmailsPurpose(AbstractPurpose):
     fields = (
         ("emails", (
             "email",
+        )),
+        ("other_registrations", (
+            'email_address',
+        )),
+        ("last_registration", (
+            'email_address',
         )),
     )
 
@@ -119,3 +129,16 @@ class MarketingPurpose(AbstractPurpose):
     slug = MARKETING_SLUG
     expiration_timedelta = relativedelta(years=1)
     fields = ()
+    source_model_class = Customer
+
+
+class FacebookPurpose(AbstractPurpose):
+    name = "retain due to facebook ID"
+    slug = FACEBOOK_SLUG
+    expiration_timedelta = relativedelta(years=5)
+    fields = "__ALL__"
+
+    source_model_class = 'tests.Customer'
+
+    def can_anonymize_obj(self, obj, fields):
+        return obj.facebook_id is not None

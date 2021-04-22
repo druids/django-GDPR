@@ -18,6 +18,10 @@ from gdpr.utils import is_reversion_installed
 from tests.validators import CZBirthNumberValidator, BankAccountValidator
 
 
+class CustomerRegistration(AnonymizationModel):
+    email_address = models.EmailField(blank=True, null=True)
+
+
 class Customer(AnonymizationModel):
     # Keys for pseudoanonymization
     first_name = models.CharField(max_length=256)
@@ -32,6 +36,14 @@ class Customer(AnonymizationModel):
         max_length=256, blank=True, null=True,
         verbose_name=_("Facebook ID"), help_text=_("Facebook ID used for login via Facebook."))
     last_login_ip = models.GenericIPAddressField(blank=True, null=True)
+
+    @property
+    def other_registrations(self):
+        return CustomerRegistration.objects.filter(email_address=self.primary_email_address).order_by('-pk')[1:]
+
+    @property
+    def last_registration(self):
+        return CustomerRegistration.objects.filter(email_address=self.primary_email_address).order_by('pk').last()
 
     def save(self, *args, **kwargs):
         """Just helper method for saving full name.
