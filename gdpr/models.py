@@ -198,7 +198,8 @@ class LegalReason(SmartModel):
         null=False,
         blank=False,
         enum=LegalReasonState,
-        default=LegalReasonState.ACTIVE
+        default=LegalReasonState.ACTIVE,
+        db_index=True
     )
     purpose_slug = models.CharField(
         verbose_name=_('purpose'),

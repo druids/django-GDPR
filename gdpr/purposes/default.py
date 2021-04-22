@@ -85,10 +85,9 @@ class AbstractPurpose(metaclass=PurposeMetaclass):
         for allowed_fields in [purpose_register[slug]().get_parsed_fields(obj_model) for slug in
                                set([i.purpose_slug for i in other_legal_reasons])]:
             parsed_fields -= allowed_fields
-
-        if len(parsed_fields) == 0:
-            # If there are no fields to anonymize do nothing.
-            return
+            if len(parsed_fields) == 0:
+                # If there are no fields to anonymize do nothing.
+                return
 
         anonymizer.anonymize_obj(obj, legal_reason, self, parsed_fields)
 

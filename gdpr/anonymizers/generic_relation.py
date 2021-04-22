@@ -36,7 +36,8 @@ class ReverseGenericRelationAnonymizer(RelationAnonymizer):
 
     def get_related_objects(self, obj):
         return self.get_related_model().objects.filter(
-            **{self.content_type_field: ContentType.objects.get_for_model(obj), self.id_field: obj.pk})
+            **{self.content_type_field: ContentType.objects.get_for_model(obj), self.id_field: obj.pk}
+        )
 
     def get_related_model(self):
         return apps.get_model(self.app_name, self.model_name)
