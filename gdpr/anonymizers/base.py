@@ -4,7 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model
 
 from gdpr.encryption import numerize_key
-from gdpr.utils import get_number_guess_len
+from gdpr.utils import get_number_guess_len, get_reversion_local_field_dict
 from gdpr.loading import anonymizer_register
 
 
@@ -81,8 +81,13 @@ class FieldAnonymizer(BaseAnonymizer):
 
     def get_value_from_version(self, obj, version, name: str, encryption_key: str, anonymization: bool = True):
         if anonymization:
-            return self._get_anonymized_value_from_value(version.field_dict[name], encryption_key)
-        return self._get_deanonymized_value_from_value(obj, version.field_dict[name], encryption_key)
+            return self._get_anonymized_value_from_value(
+                get_reversion_local_field_dict(version)[name], encryption_key
+            )
+        else:
+            return self._get_deanonymized_value_from_value(
+                obj, get_reversion_local_field_dict(version)[name], encryption_key
+            )
 
     def get_anonymized_value_from_obj(self, obj, name: str, encryption_key: str):
         return self.get_value_from_obj(obj, name, encryption_key, anonymization=True)
