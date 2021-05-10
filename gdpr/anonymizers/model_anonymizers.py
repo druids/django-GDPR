@@ -15,7 +15,10 @@ from django.db.models.fields import Field
 from gdpr.anonymizers.base import BaseAnonymizer, FieldAnonymizer, RelationAnonymizer
 from gdpr.fields import Fields
 from gdpr.models import AnonymizedData, LegalReason
-from gdpr.utils import get_field_or_none, get_reversion_version_model
+from gdpr.utils import (
+    get_field_or_none, get_reversion_version_model, get_all_parent_objects, get_all_obj_and_parent_versions,
+    get_all_obj_and_parent_versions_queryset_list, get_reversion_local_field_dict
+)
 
 if TYPE_CHECKING:
     from gdpr.purposes.default import AbstractPurpose
@@ -55,6 +58,9 @@ class ModelAnonymizerMeta(type):
 
         if not getattr(new_obj.Meta, 'abstract', False):
             anonymizer_register.register(new_obj.Meta.model, new_obj)
+            new_obj.Meta.anonymize_reversion = getattr(new_obj.Meta, 'anonymize_reversion', False)
+            new_obj.Meta.delete_reversion = getattr(new_obj.Meta, 'delete_reversion', False)
+            new_obj.Meta.reversible_anonymization = getattr(new_obj.Meta, 'reversible_anonymization', True)
 
         return new_obj
 
@@ -111,14 +117,31 @@ class ModelAnonymizerBase(BaseAnonymizer, metaclass=ModelAnonymizerMeta):
                 'utf-8')).hexdigest()
 
     def is_reversible(self, obj) -> bool:
-        if hasattr(self.Meta, 'reversible_anonymization'):  # type: ignore
-            return self.Meta.reversible_anonymization  # type: ignore
-        return True
+        return self.Meta.reversible_anonymization  # type: ignore
 
-    def anonymize_reversion(self, obj) -> bool:
-        if hasattr(self.Meta, 'anonymize_reversion'):  # type: ignore
-            return self.Meta.anonymize_reversion  # type: ignore
-        return False
+    def anonymize_reversion(self, obj, field_names, anonymization: bool):
+        from reversion.models import Version
+
+        versions: List[Version] = get_all_obj_and_parent_versions(obj)
+        versions_update_data = [
+            (
+                version,
+                {
+                    name: self.get_value_from_version(self[name], obj, version, name,
+                                                      anonymization=anonymization)
+                    for name in field_names
+                    if name in get_reversion_local_field_dict(version)
+                }
+            )
+            for version in versions
+        ]
+        for version, version_dict in versions_update_data:
+            self._perform_version_update(version, version_dict)
+
+    def delete_reversion(self, obj, anonymization: bool):
+        if anonymization:
+            for qs in get_all_obj_and_parent_versions_queryset_list(obj):
+                qs.delete()
 
     def get_encryption_key(self, obj) -> str:
         if not self.is_reversible(obj):
@@ -169,28 +192,6 @@ class ModelAnonymizerBase(BaseAnonymizer, metaclass=ModelAnonymizerMeta):
                 field=name, is_active=True, content_type=self.content_type, object_id=str(obj.pk)
             ).delete()
 
-    def mark_field_as_anonymized(self, obj: Model, name: str, legal_reason: Optional[LegalReason] = None):
-        self.update_field_as_anonymized(obj, name, legal_reason, anonymization=True)
-
-    def unmark_field_as_anonymized(self, obj: Model, name: str):
-        self.update_field_as_anonymized(obj, name, anonymization=False)
-
-    def get_anonymized_value_from_obj(self, field: FieldAnonymizer, obj: Model, name: str) -> Any:
-        """Get from field, obj and field name anonymized value."""
-        return self.get_value_from_obj(field, obj, name, anonymization=True)
-
-    def get_deanonymized_value_from_obj(self, field: FieldAnonymizer, obj: Model, name: str) -> Any:
-        """Get from field, obj and field name deanonymized value."""
-        return self.get_value_from_obj(field, obj, name, anonymization=False)
-
-    def get_anonymized_value_from_version(self, field: FieldAnonymizer, obj: Model, version, name: str) -> Any:
-        """Get from field, obj and field name anonymized value."""
-        return self.get_value_from_version(field, obj, version, name, anonymization=True)
-
-    def get_deanonymized_value_from_version(self, field: FieldAnonymizer, obj: Model, version, name: str) -> Any:
-        """Get from field, obj and field name deanonymized value."""
-        return self.get_value_from_version(field, obj, version, name, anonymization=False)
-
     def _perform_update(self, obj: Model, updated_data: dict, legal_reason: Optional[LegalReason] = None,
                         anonymization: bool = True):
         for field_name, value in updated_data.items():
@@ -199,54 +200,9 @@ class ModelAnonymizerBase(BaseAnonymizer, metaclass=ModelAnonymizerMeta):
         for field_name in updated_data.keys():
             self.update_field_as_anonymized(obj, field_name, legal_reason, anonymization=anonymization)
 
-    def get_parent_models(self, model_or_obj: Union[Model, Type[Model]]) -> List[Type[Model]]:
-        """From model get all it's parent models."""
-        return model_or_obj._meta.get_parent_list()
-
-    def get_all_parent_objects(self, obj: Model) -> List[Model]:
-        """Get all related parent objects."""
-        parent_paths = [
-            [path_info.join_field.name for path_info in parent_path]
-            for parent_path in
-            [obj._meta.get_path_to_parent(parent_model) for parent_model in self.get_parent_models(obj)]
-        ]
-
-        parent_objects = []
-        for parent_path in parent_paths:
-            parent_obj = obj
-            for path in parent_path:
-                parent_obj = getattr(parent_obj, path, None)
-            parent_objects.append(parent_obj)
-
-        return [i for i in parent_objects if i is not None]
-
-    def get_reversion_versions(self, obj: Model):
-        from gdpr.utils import get_reversion_versions
-        versions = [i for i in get_reversion_versions(obj)]  # QuerySet to list
-        parent_obj_versions = [get_reversion_versions(i) for i in self.get_all_parent_objects(obj)]
-        versions += [item for sublist in parent_obj_versions for item in sublist]
-        return versions
-
-    def _perform_anonymization(self, obj: Model, updated_data: dict,
-                               legal_reason: Optional[LegalReason] = None):
-        self._perform_update(obj, updated_data, legal_reason, anonymization=True)
-
-    def _perform_deanonymization(self, obj: Model, updated_data: dict):
-        self._perform_update(obj, updated_data, anonymization=False)
-
     def perform_update(self, obj: Model, updated_data: dict, legal_reason: Optional[LegalReason] = None,
                        anonymization: bool = True):
-        with transaction.atomic():
-            self._perform_update(obj, updated_data, legal_reason, anonymization=anonymization)
-
-    def perform_anonymization(self, obj: Model, updated_data: dict,
-                              legal_reason: Optional[LegalReason] = None):
-        """Update data in database and mark them as anonymized."""
-        self.perform_update(obj, updated_data, legal_reason, anonymization=True)
-
-    def perform_deanonymization(self, obj: Model, updated_data: dict):
-        """Update data in database and mark them as anonymized."""
-        self.perform_update(obj, updated_data, anonymization=False)
+        self._perform_update(obj, updated_data, legal_reason, anonymization=anonymization)
 
     @staticmethod
     def _perform_version_update(version, update_data):
@@ -269,27 +225,6 @@ class ModelAnonymizerBase(BaseAnonymizer, metaclass=ModelAnonymizerMeta):
             fields=version_fields
         )
         version.save()
-
-    def perform_update_with_version(self, obj: Model, updated_data: Dict[str, Any],
-                                    updated_version_data: List[Tuple[Any, Dict]],
-                                    legal_reason: Optional[LegalReason] = None,
-                                    anonymization: bool = True):
-        with transaction.atomic():
-            # first we need to update versions
-            for version, version_dict in updated_version_data:
-                self._perform_version_update(version, version_dict)
-            self._perform_update(obj, updated_data, legal_reason, anonymization=anonymization)
-
-    def perform_anonymization_with_version(self, obj: Model, updated_data: Dict[str, Any],
-                                           updated_version_data: List[Tuple[Any, Dict]],
-                                           legal_reason: Optional[LegalReason] = None):
-        """Update data in database and versions and mark them as anonymized."""
-        self.perform_update_with_version(obj, updated_data, updated_version_data, legal_reason, anonymization=True)
-
-    def perform_deanonymization_with_version(self, obj: Model, updated_data: Dict,
-                                             updated_version_data: List[Tuple[Any, Dict]]):
-        """Update data in database and mark them as anonymized."""
-        self.perform_update_with_version(obj, updated_data, updated_version_data, anonymization=False)
 
     def anonymize_qs(self, qs: QuerySet) -> None:
         raise NotImplementedError()
@@ -452,28 +387,11 @@ class ModelAnonymizerBase(BaseAnonymizer, metaclass=ModelAnonymizerMeta):
             update_dict = {
                 name: self.get_value_from_obj(self[name], obj, name, anonymization) for name in raw_local_fields
             }
-            if self.anonymize_reversion(obj):
-                from reversion.models import Version
-                from gdpr.utils import get_reversion_local_field_dict
-                versions: List[Version] = self.get_reversion_versions(obj)
-                versions_update_dict = [
-                    (
-                        version,
-                        {
-                            name: self.get_value_from_version(self[name], obj, version, name,
-                                                              anonymization=anonymization)
-                            for name in raw_local_fields
-                            if name in get_reversion_local_field_dict(version)
-                        }
-                    )
-                    for version in versions
-                ]
-                self.perform_update_with_version(
-                    obj, update_dict, versions_update_dict, legal_reason,
-                    anonymization=anonymization
-                )
-            else:
-                self.perform_update(obj, update_dict, legal_reason, anonymization=anonymization)
+            if self.Meta.delete_reversion:  # type: ignore
+                self.delete_reversion(obj, anonymization)
+            elif self.Meta.anonymize_reversion:  # type: ignore
+                self.anonymize_reversion(obj, raw_local_fields, anonymization)
+            self.perform_update(obj, update_dict, legal_reason, anonymization=anonymization)
 
         self.update_related_fields(parsed_fields, obj, legal_reason, purpose, anonymization)
 
@@ -522,10 +440,8 @@ class DeleteModelAnonymizer(ModelAnonymizer):
 
             obj.__class__.objects.filter(pk=obj.pk).delete()
 
-            if self.anonymize_reversion(obj):
-                from reversion.models import Version
-                from gdpr.utils import get_reversion_versions
-                get_reversion_versions(obj).delete()
+            if self.Meta.delete_reversion:  # type: ignore
+                self.delete_reversion(obj, anonymization)
 
         elif self.DELETE_FIELD_NAME in parsed_fields.local_fields:
             parsed_fields.local_fields = [i for i in parsed_fields.local_fields if i != self.DELETE_FIELD_NAME]

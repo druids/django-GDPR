@@ -1,4 +1,4 @@
-from typing import Any, Type
+from typing import Any, List, Type
 
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Model, QuerySet
@@ -75,3 +75,33 @@ def is_reversion_installed():
         return True
     except ImportError:
         return False
+
+
+def get_all_parent_objects(obj: Model) -> List[Model]:
+    """Return all model parent instances."""
+    parent_paths = [
+        [path_info.join_field.name for path_info in parent_path]
+        for parent_path in
+        [obj._meta.get_path_to_parent(parent_model) for parent_model in obj._meta.get_parent_list()]
+    ]
+
+    parent_objects = []
+    for parent_path in parent_paths:
+        parent_obj = obj
+        for path in parent_path:
+            parent_obj = getattr(parent_obj, path, None)
+        parent_objects.append(parent_obj)
+
+    return [i for i in parent_objects if i is not None]
+
+
+def get_all_obj_and_parent_versions_queryset_list(obj: Model) -> List[QuerySet]:
+    """Return list of object and its parent version querysets"""
+    from gdpr.utils import get_reversion_versions
+
+    return [get_reversion_versions(i) for i in get_all_parent_objects(obj)] + [get_reversion_versions(obj)]
+
+
+def get_all_obj_and_parent_versions(obj: Model) -> List[Model]:
+    """Return list of all object and its parent versions"""
+    return [item for sublist in get_all_obj_and_parent_versions_queryset_list(obj) for item in sublist]

@@ -2,6 +2,8 @@ from datetime import timedelta
 from typing import List
 from unittest import skipIf
 
+from germanium.tools import assert_dict_equal, assert_equal, assert_not_equal, assert_raises
+
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.test import TestCase
@@ -9,11 +11,14 @@ from django.test import TestCase
 from gdpr.anonymizers import ModelAnonymizer
 from gdpr.loading import anonymizer_register
 from gdpr.models import LegalReason
-from gdpr.utils import get_reversion_local_field_dict, is_reversion_installed
-from germanium.tools import assert_dict_equal, assert_equal, assert_not_equal, assert_raises
+from gdpr.utils import (
+    get_all_obj_and_parent_versions, get_all_obj_and_parent_versions_queryset_list, get_all_parent_objects,
+    get_reversion_local_field_dict, get_reversion_versions, is_reversion_installed
+)
 from tests.anonymizers import ChildEAnonymizer, ContactFormAnonymizer
 from tests.models import (
-    Account, Address, Avatar, ChildE, ContactForm, Customer, CustomerRegistration, Email, Note, Payment
+    Account, Address, Avatar, ChildE, ContactForm, Customer, CustomerRegistration, Email, ExtraParentD, Note, ParentB,
+    ParentC, Payment, TopParentA
 )
 from tests.purposes import EMAIL_SLUG
 
@@ -27,6 +32,7 @@ from .utils import AnonymizedDataMixin, NotImplementedMixin
 
 
 class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase):
+
     @classmethod
     def setUpTestData(cls):
         cls.customer: Customer = Customer(**CUSTOMER__KWARGS)
@@ -319,10 +325,105 @@ class TestModelAnonymization(AnonymizedDataMixin, NotImplementedMixin, TestCase)
         assert_dict_equal(versions[2].field_dict, deanon_versions[2].field_dict)
 
     @skipIf(not is_reversion_installed(), 'Django-reversion is not installed.')
-    def test_reversion_anonymization_parents(self):
+    def test_reversion_delete(self):
         from reversion import revisions as reversion
         from reversion.models import Version
         from gdpr.utils import get_reversion_versions
+
+        anon = ContactFormAnonymizer()
+        anon.Meta.delete_reversion = True
+
+        user = User(username='test_username')
+        user.save()
+
+        with reversion.create_revision():
+            form = ContactForm()
+            form.email = CUSTOMER__EMAIL
+            form.full_name = CUSTOMER__LAST_NAME
+            form.save()
+
+            reversion.set_user(user)
+
+        with reversion.create_revision():
+            form.email = CUSTOMER__EMAIL2
+            form.save()
+
+            reversion.set_user(user)
+
+        with reversion.create_revision():
+            form.email = CUSTOMER__EMAIL3
+            form.save()
+
+            reversion.set_user(user)
+
+        versions: List[Version] = get_reversion_versions(form).order_by('id')
+
+        assert_equal(versions[0].field_dict['email'], CUSTOMER__EMAIL)
+        assert_equal(versions[1].field_dict['email'], CUSTOMER__EMAIL2)
+        assert_equal(versions[2].field_dict['email'], CUSTOMER__EMAIL3)
+
+        anon.anonymize_obj(form, base_encryption_key=self.base_encryption_key)
+
+        anon_versions: List[Version] = get_reversion_versions(form).order_by('id')
+        assert_equal(len(anon_versions), 0)
+
+    def test_get_all_parent_objects(self):
+        e = ChildE.objects.create(
+            name='Lorem',
+            first_name='Ipsum',
+            last_name='Dolor',
+            birth_date=CUSTOMER__BIRTH_DATE,
+            note='sit Amet'
+        )
+
+        parent_objects = get_all_parent_objects(e)
+        assert_equal(len(parent_objects), 4)
+        assert_equal([obj.__class__ for obj in parent_objects], [ParentC, ExtraParentD, ParentB, TopParentA])
+
+    @skipIf(not is_reversion_installed(), 'Django-reversion is not installed.')
+    def test_get_all_obj_and_parent_versions_queryset_list(self):
+        from reversion import revisions as reversion
+
+        with reversion.create_revision():
+            e = ChildE()
+            e.name = 'Lorem'
+            e.first_name = 'Ipsum'
+            e.last_name = 'Dolor'
+            e.birth_date = CUSTOMER__BIRTH_DATE
+            e.note = 'sit Amet'
+            e.save()
+
+        versions_queryset_list = get_all_obj_and_parent_versions_queryset_list(e)
+        assert_equal(len(versions_queryset_list), 5)
+        assert_equal(
+            [qs[0]._content_type.model_class() for qs in versions_queryset_list],
+            [ParentC, ExtraParentD, ParentB, TopParentA, ChildE]
+        )
+
+    @skipIf(not is_reversion_installed(), 'Django-reversion is not installed.')
+    def test_get_all_obj_and_parent_versions(self):
+        from reversion import revisions as reversion
+
+        with reversion.create_revision():
+            e = ChildE()
+            e.name = 'Lorem'
+            e.first_name = 'Ipsum'
+            e.last_name = 'Dolor'
+            e.birth_date = CUSTOMER__BIRTH_DATE
+            e.note = 'sit Amet'
+            e.save()
+
+        versions_list = get_all_obj_and_parent_versions(e)
+        assert_equal(len(versions_list), 5)
+        assert_equal(
+            [version._content_type.model_class() for version in versions_list],
+            [ParentC, ExtraParentD, ParentB, TopParentA, ChildE]
+        )
+
+    @skipIf(not is_reversion_installed(), 'Django-reversion is not installed.')
+    def test_reversion_anonymization_parents(self):
+        from reversion import revisions as reversion
+        from reversion.models import Version
 
         anon = ChildEAnonymizer()
 
