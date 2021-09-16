@@ -25,7 +25,8 @@ if TYPE_CHECKING:
 class LegalReasonManager(models.Manager):
 
     def create_consent(self, purpose_slug: str, source_object, issued_at: Optional[datetime] = None,
-                       tag: Optional[str] = None, related_objects: Optional[Iterable[Type[models.Model]]] = None):
+                       tag: Optional[str] = None, related_objects: Optional[Iterable[Type[models.Model]]] = None,
+                       expires_at: Optional[datetime] = None):
         """
         Create (or update, if it exist) a LegalReason with purpose slug for concrete object instance
 
@@ -35,6 +36,7 @@ class LegalReasonManager(models.Manager):
             issued_at: When the Legal Reason consent was given
             tag: String that the developer can add to the created consent and use it to mark his business processes
             related_objects: Objects this Legal Reason relates to (ie. order, registrations etc.)
+            expires_at: When the Legal Reason consent expires
 
         Returns:
             Legal Reason: LegalReason object
@@ -57,7 +59,7 @@ class LegalReasonManager(models.Manager):
             purpose_slug=purpose_slug,
             defaults={
                 'issued_at': issued_at,
-                'expires_at': issued_at + purpose.expiration_timedelta,
+                'expires_at': expires_at if expires_at else issued_at + purpose.expiration_timedelta,
                 'tag': tag,
                 'state': LegalReasonState.ACTIVE,
             }
@@ -65,7 +67,7 @@ class LegalReasonManager(models.Manager):
 
         if not created:
             legal_reason.change_and_save(
-                expires_at=timezone.now() + purpose.expiration_timedelta,
+                expires_at=expires_at if expires_at else timezone.now() + purpose.expiration_timedelta,
                 tag=tag,
                 state=LegalReasonState.ACTIVE
             )
