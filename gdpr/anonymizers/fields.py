@@ -315,7 +315,7 @@ class ReplaceFileFieldAnonymizer(FileFieldAnonymizer):
             self.replacement_file = replacement_file
         super().__init__(*args, **kwargs)
 
-    def get_replacement_file(self):
+    def get_replacement_file(self, file_name):
         if self.replacement_file is not None:
             return File(open(self.replacement_file, "rb"))
         elif getattr(settings, "GDPR_REPLACE_FILE_PATH", None) is not None:
@@ -326,7 +326,7 @@ class ReplaceFileFieldAnonymizer(FileFieldAnonymizer):
     def get_encrypted_value(self, value: FieldFile, encryption_key: str):
         file_name = value.name
         value.delete(save=False)
-        file = self.get_replacement_file()
+        file = self.get_replacement_file(file_name)
 
         if func_supports_parameter(value.storage.save, 'max_length'):
             value.name = value.storage.save(file_name, file, max_length=value.field.max_length)
