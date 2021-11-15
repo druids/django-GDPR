@@ -138,6 +138,7 @@ def translate_email_address(key: str, email: str, encrypt: bool = True, restrict
     Examples:
         * ``translate_email_address('LoremIpsum', 'foo@bar.com')`` -> ``'-_b@ao9.com'``
         * ``translate_email_address('LoremIpsum', '-_b@ao9.com', encrypt=False)`` -> ``'foo@bar.com'``
+        * ``translate_email_address('LoremIpsum', 'foo@localhost')`` -> ``'-_b@localhost'``
 
     Notes:
         * The first part of the email address in non restricted mode is translated based on RFC5322, RFC5321, RFC3696
@@ -168,13 +169,15 @@ def translate_email_address(key: str, email: str, encrypt: bool = True, restrict
 
     """
     local, domain_tld = email.split("@")
-    domain, tld = domain_tld.rsplit(".", 1)
-    if not restricted_mode:
-        return (f'{translate_text(key, local, encrypt, EMAIL_LOCAL_CHARS)}@'
-                f'{translate_text(key, domain, encrypt, DOMAIN_CHARS)}.{tld}')
+    if "." in domain_tld:
+        domain, tld = domain_tld.rsplit(".", 1)
+        translated_domain =  f'{translate_text(key, domain, encrypt, DOMAIN_CHARS)}.{tld}'
     else:
-        return (f'{translate_text(key, local, encrypt, RESTRICTED_EMAIL_LOCAL_CHARS)}@'
-                f'{translate_text(key, domain, encrypt, DOMAIN_CHARS)}.{tld}')
+        translated_domain = domain_tld
+    if restricted_mode:
+        return f'{translate_text(key, local, encrypt, RESTRICTED_EMAIL_LOCAL_CHARS)}@{translated_domain}'
+    else:
+        return f'{translate_text(key, local, encrypt, EMAIL_LOCAL_CHARS)}@{translated_domain}'
 
 
 def encrypt_email_address(key: str, email: str, restricted_mode: bool = True):

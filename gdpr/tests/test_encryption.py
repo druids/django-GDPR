@@ -121,6 +121,19 @@ class TestEncryption(TestCase):
         decrypted = decrypt_email_address(self.encryption_key, ciphertext)
         assert_equal(cleartext, decrypted, "The decrypted email address is not equal to the original email address.")
 
+    def test_encrypt_email_address_with_single_level_domain(self):
+        """
+        Test function `gdpr.encryption.encrypt_email_address` by using email address from Faker lib.
+        """
+        cleartext = f'{self.faker.email().split("@")[0]}@localhost'
+
+        ciphertext = encrypt_email_address(self.encryption_key, cleartext)
+        assert_not_equal(cleartext, ciphertext, "The encrypted email address is equal to the original email address.")
+        assert_equal(ciphertext.split('@')[1], 'localhost')
+
+        decrypted = decrypt_email_address(self.encryption_key, ciphertext)
+        assert_equal(cleartext, decrypted, "The decrypted email address is not equal to the original email address.")
+
     def test_translate_iban(self):
         """
         Test function `gdpr.encryption.translate_iban` by using an example IBAN for every country using IBAN system.
