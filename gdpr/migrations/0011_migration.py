@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='legalreason',
             name='state',
-            field=enumfields.fields.NumEnumField(
+            field=enumfields.fields.IntegerEnumField(
                 db_index=True, default=1, enum=gdpr.enums.LegalReasonState, verbose_name='state'
             ),
         ),

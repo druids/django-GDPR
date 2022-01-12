@@ -12,7 +12,7 @@ from chamber.models import SmartModel
 
 from typing import TYPE_CHECKING, Iterable, Optional, Type
 
-from enumfields import NumEnumField
+from enumfields import IntegerEnumField
 
 from .enums import LegalReasonState
 from .loading import purpose_register
@@ -201,7 +201,7 @@ class LegalReason(SmartModel):
         blank=True,
         max_length=100
     )
-    state = NumEnumField(
+    state = IntegerEnumField(
         verbose_name=_('state'),
         null=False,
         blank=False,
