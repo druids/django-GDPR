@@ -44,7 +44,7 @@ setup(
         'tqdm>=4.28.1',
         'pyaes>=1.6.1',
         'unidecode',
-        'django-choice-enumfields>=1.0.5',
+        'django-choice-enumfields>=1.1.0',
     ],
     zip_safe=False,
 )
