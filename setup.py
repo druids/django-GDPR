@@ -39,7 +39,7 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
     install_requires=[
-        'django>=2.2',
+        'django>=2.2,<=3.2',
         'django-chamber>=0.6.6',
         'tqdm>=4.28.1',
         'pyaes>=1.6.1',
