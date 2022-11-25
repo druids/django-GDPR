@@ -1,6 +1,8 @@
+from unittest.mock import patch
+
 from dateutil.relativedelta import relativedelta
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from freezegun import freeze_time
 from gdpr.models import LegalReason
@@ -74,3 +76,19 @@ class TestDeactivateExpiredReasons(AnonymizedDataMixin, TestCase):
         self.assertAnonymizedDataNotExists(self.customer, 'first_name')
         assert_not_equal(self.customer._anonymize_obj(), CUSTOMER__FIRST_NAME)
         self.assertAnonymizedDataExists(self.customer, 'first_name')
+
+    @override_settings(GDPR_DEACTIVATE_EXPIRED_REASONS_CHUNK_SIZE=1)
+    def test_command_should_support_chunking(self):
+        legal_reason1 = LegalReason.objects.create_consent(MARKETING_SLUG, self.customer)
+        legal_reason1.save()
+        legal_reason2 = LegalReason.objects.create_consent(FIRST_AND_LAST_NAME_SLUG, self.customer)
+        legal_reason2.save()
+
+        with freeze_time(max(legal_reason1.expires_at, legal_reason2.expires_at) + relativedelta(seconds=1)):
+            with patch('gdpr.management.commands.deactivate_expired_reasons.logger.info') as logger_mock:
+                assert_equal(LegalReason.objects.filter_active().count(), 2)
+                test_call_command('deactivate_expired_reasons')
+                assert_equal(LegalReason.objects.filter_active().count(), 1)
+                test_call_command('deactivate_expired_reasons')
+                assert_equal(LegalReason.objects.filter_active().count(), 0)
+                logger_mock.assert_called_once_with('Command "deactivate_expired_reasons" finished')
